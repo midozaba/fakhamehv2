@@ -1,13 +1,26 @@
 import React, { useState } from 'react';
-import { MessageCircle } from 'lucide-react';
-import { useTranslation } from '../utils/translations';
-import carsData from '../data/cars.json';
+import { MessageCircle } from 'lucide-react'; // or your icon library
 
-const ChatBot = ({ language }) => {
-  const [chatOpen, setChatOpen] = useState(false);
+const ChatBot = ({language}) => {
+  const [chatOpen, setChatOpen] = useState(true);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
-  const t = useTranslation(language);
+
+  const t = (key) => {
+    const translations = {
+      ar: {
+        // ... your Arabic translations
+        chatTitle: 'مساعد الحجز',
+        chatPlaceholder: 'اسأل عن السيارات أو خدمات',
+      },
+      en: {
+        // ... your English translations
+        chatTitle: 'Booking Assistant',
+        chatPlaceholder: 'Ask about cars or booking services',
+      }
+    };
+    return translations[language][key] || key;
+  };
 
   const handleChatMessage = (message) => {
     const userMessage = { type: 'user', text: message };
@@ -21,36 +34,9 @@ const ChatBot = ({ language }) => {
         botResponse = language === 'ar'
           ? 'أسعار السيارات تبدأ من 20$ في اليوم للسيارات الاقتصادية و تصل إلى 70$ للسيارات الفاخرة والفانات. هل تريد معرفة سعر سيارة محددة؟'
           : 'Car prices start from $20 per day for economy cars and go up to $70 for luxury vehicles and vans. Would you like to know the price of a specific car?';
-      } else if (lowerMessage.includes('insurance') || lowerMessage.includes('تأمين')) {
-        botResponse = language === 'ar'
-          ? 'نوفر ثلاثة أنواع من التأمين: أساسي (5$/يوم)، شامل (10$/يوم)، وبريميوم (15$/يوم) مع دعم 24/7. أيهم تفضل؟'
-          : 'We offer three types of insurance: Basic ($5/day), Full ($10/day), and Premium ($15/day) with 24/7 support. Which one do you prefer?';
-      } else if (lowerMessage.includes('booking') || lowerMessage.includes('حجز') || lowerMessage.includes('book') || lowerMessage.includes('reserve')) {
-        botResponse = language === 'ar'
-          ? 'لحجز سيارة: 1) اختر السيارة المناسبة، 2) اضغط "احجز الآن"، 3) حدد التواريخ، 4) اختر التأمين والخدمات الإضافية، 5) أدخل بياناتك الشخصية.'
-          : 'To book a car: 1) Choose your preferred car, 2) Click "Book Now", 3) Select dates, 4) Choose insurance and additional services, 5) Enter your personal information.';
-      } else if (lowerMessage.includes('available') || lowerMessage.includes('متاح') || lowerMessage.includes('cars') || lowerMessage.includes('سيارات')) {
-        const availableCars = carsData.filter(car => car.status === 'available').length;
-        botResponse = language === 'ar'
-          ? `لدينا ${availableCars} سيارة متاحة حالياً من مختلف الفئات: اقتصادية، سيدان، SUV، فان، وفاخرة. هل تبحث عن فئة معينة؟`
-          : `We currently have ${availableCars} cars available across different categories: Economy, Sedan, SUV, Van, and Luxury. Are you looking for a specific category?`;
-      } else if (lowerMessage.includes('location') || lowerMessage.includes('موقع') || lowerMessage.includes('address') || lowerMessage.includes('عنوان')) {
-        botResponse = language === 'ar'
-          ? 'نقع في عمان، الأردن. يمكننا توصيل السيارة إليك أو يمكنك استلامها من مكتبنا. خدمة التوصيل متاحة داخل عمان.'
-          : 'We are located in Amman, Jordan. We can deliver the car to you or you can pick it up from our office. Delivery service is available within Amman.';
-      } else if (lowerMessage.includes('contact') || lowerMessage.includes('اتصال') || lowerMessage.includes('phone') || lowerMessage.includes('هاتف')) {
-        botResponse = language === 'ar'
-          ? 'يمكنك التواصل معنا على: 📞 هاتف: +962 79 123 4567 | 📧 إيميل: info@alfakhama.com | ⏰ ساعات العمل: 8 صباحاً - 10 مساءً'
-          : 'You can contact us at: 📞 Phone: +962 79 123 4567 | 📧 Email: info@alfakhama.com | ⏰ Working hours: 8 AM - 10 PM';
-      } else if (lowerMessage.includes('services') || lowerMessage.includes('خدمات') || lowerMessage.includes('additional') || lowerMessage.includes('إضافية')) {
-        botResponse = language === 'ar'
-          ? 'خدماتنا الإضافية: 📱 هاتف نقال (3$/يوم)، 🌐 واي فاي (2$/يوم)، 🗺️ GPS (2$/يوم)، 👶 مقعد أطفال (1$/يوم). جميع الخدمات اختيارية.'
-          : 'Our additional services: 📱 Mobile phone ($3/day), 🌐 WiFi ($2/day), 🗺️ GPS ($2/day), 👶 Child seat ($1/day). All services are optional.';
-      } else if (lowerMessage.includes('requirements') || lowerMessage.includes('متطلبات') || lowerMessage.includes('documents') || lowerMessage.includes('وثائق')) {
-        botResponse = language === 'ar'
-          ? 'للحجز تحتاج: 1) رخصة قيادة سارية، 2) هوية شخصية أو جواز سفر، 3) بطاقة ائتمانية، 4) عمر 21 سنة فما فوق. للأجانب: رخصة دولية مطلوبة.'
-          : 'For booking you need: 1) Valid driving license, 2) ID or passport, 3) Credit card, 4) Age 21 or above. For foreigners: International driving license required.';
-      } else {
+      } 
+      // ... rest of your bot logic
+      else {
         const greetings = ['hello', 'hi', 'مرحبا', 'السلام', 'أهلا', 'hey'];
         if (greetings.some(greeting => lowerMessage.includes(greeting))) {
           botResponse = language === 'ar'
@@ -76,21 +62,26 @@ const ChatBot = ({ language }) => {
   };
 
   return (
-    <div className={`fixed bottom-4 ${language === 'ar' ? 'left-4' : 'right-4'} z-50`}>
+    /* Main ChatBot Container - Fixed positioning for bottom corner */
+    <div className={`fixed bottom-5 ${language === 'ar' ? 'left-4' : 'right-4'} z-50`}>
       {chatOpen && (
-        <div className="bg-white rounded-lg shadow-xl w-80 h-96 mb-4 border-2 border-blue-200">
-          <div className="bg-gradient-to-r from-blue-900 to-slate-600 text-white p-4 rounded-t-lg flex justify-between items-center">
+        /* Chat Window Container - White background with shadow */
+        <div className="bg-white rounded-lg shadow-xl w-64 h- 96 mb-4 border-2 border-blue-200" >
+          {/* Chat Header - Blue gradient with title and close button */}
+          <div className="bg-gradient-to-r from-blue-900 to-slate-600 text-white px-3 py-1 rounded-t-lg flex justify-between items-center ">
             <h3 className="font-bold">{t('chatTitle')}</h3>
             <button
-              onClick={() => setChatOpen(false)}
+              onClick={() => setChatOpen(false) }
               className="text-white hover:text-gray-200"
             >
               ✕
             </button>
           </div>
 
+          {/* Chat Messages Area - Scrollable container for messages */}
           <div className="h-64 overflow-y-auto p-4 space-y-3" id="chat-messages">
             {chatMessages.length === 0 && (
+              /* Welcome Message - Shows when no messages */
               <div className="bg-gray-100 p-3 rounded-lg">
                 {language === 'ar' ?
                   'مرحباً! كيف يمكنني مساعدتك في حجز السيارة المناسبة؟ يمكنك سؤالي عن الأسعار، التأمين، أو السيارات المتاحة.' :
@@ -100,6 +91,7 @@ const ChatBot = ({ language }) => {
             )}
 
             {chatMessages.map((message, index) => (
+              /* Individual Message - User or bot message bubble */
               <div key={index} className={`p-3 rounded-lg ${message.type === 'user'
                   ? `bg-blue-500 text-white ${language === 'ar' ? 'mr-4' : 'ml-4'}`
                   : `bg-gray-100 ${language === 'ar' ? 'ml-4' : 'mr-4'}`
@@ -109,8 +101,10 @@ const ChatBot = ({ language }) => {
             ))}
           </div>
 
-          <div className="p-4 border-t">
-            <div className={`flex ${language === 'ar' ? 'space-x-reverse space-x-2' : 'space-x-2'}`}>
+          {/* Chat Input Area - Input field and send button */}
+          <div className="p-2 border-t">
+            {/* Input Container - Flex layout for input and button */}
+            <div className={`flex py-0.5 gap-1 ${language === 'ar' ? 'space-x-reverse' : ''}`}>
               <input
                 type="text"
                 value={chatInput}
@@ -122,15 +116,15 @@ const ChatBot = ({ language }) => {
                   }
                 }}
                 placeholder={t('chatPlaceholder')}
-                className="flex-1 p-2 border rounded-lg text-sm"
+                className="flex-1 p-2 border-solid border-1 border-blue-100 rounded-lg text-sm focus:outline-none"
                 dir={language === 'ar' ? 'rtl' : 'ltr'}
               />
+              {/* Send Button - Arrow button to send message */}
               <button
                 onClick={() => {
                   if (chatInput.trim()) {
                     handleChatMessage(chatInput.trim());
                     setChatInput('');
-                    // Auto scroll to bottom
                     setTimeout(() => {
                       const chatContainer = document.getElementById('chat-messages');
                       if (chatContainer) {
@@ -149,12 +143,15 @@ const ChatBot = ({ language }) => {
         </div>
       )}
 
-      <button
-        onClick={() => setChatOpen(!chatOpen)}
-        className="bg-gradient-to-r from-blue-900 to-slate-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all animate-pulse"
-      >
-        <MessageCircle size={24} />
-      </button>
+      {!chatOpen && (
+        /* Chat Toggle Button - Floating chat icon when chat is closed */
+        <button
+          onClick={() => setChatOpen(!chatOpen)}
+          className="bg-gradient-to-r from-blue-900 to-slate-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all animate-pulse"
+        >
+          <MessageCircle size={24} />
+        </button>
+      )}
     </div>
   );
 };
