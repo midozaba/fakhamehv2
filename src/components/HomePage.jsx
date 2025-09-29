@@ -4,8 +4,15 @@ import { useTranslation } from '../utils/translations';
 import { getCarImage } from '../utils/carHelpers';
 import carsData from '../data/cars.json';
 
-const HomePage = ({ language, setCurrentPage, setSelectedCar }) => {
+const HomePage = ({ language, setCurrentPage, setSelectedCar, currency }) => {
   const t = useTranslation(language);
+
+  // Conversion rate: 1 JOD = 1.41 USD
+  const convertPrice = (priceJOD) => {
+    return currency === "USD" ? (priceJOD * 1.41).toFixed(2) : priceJOD;
+  };
+
+  const currencySymbol = currency === "USD" ? "$" : "JOD";
 
   return (
     <div className={language === 'ar' ? 'rtl' : 'ltr'}>
@@ -49,7 +56,7 @@ const HomePage = ({ language, setCurrentPage, setSelectedCar }) => {
                   <p className="text-gray-600 mb-4">{t('model')}: {car.CAR_MODEL} • {t('color')}: {t(car.car_color)}</p>
                   <div className="flex justify-between items-center mb-4">
                     <div className="text-2xl font-bold text-blue-900">
-                      ${car.PRICEPERDAY} <span className="text-sm text-gray-500">{t('perDay')}</span>
+                      {currencySymbol} {convertPrice(car.PRICEPERDAY)} <span className="text-sm text-gray-500">{t('perDay')}</span>
                     </div>
                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
                       {t('available')}

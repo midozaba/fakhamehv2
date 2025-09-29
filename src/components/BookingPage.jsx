@@ -9,10 +9,18 @@ const BookingPage = ({
   bookingData,
   setBookingData,
   setCurrentPage,
-  handleBookingSubmit
+  handleBookingSubmit,
+  currency
 }) => {
   const t = useTranslation(language);
   const pricing = calculatePrice(selectedCar, bookingData);
+
+  // Conversion rate: 1 JOD = 1.41 USD
+  const convertPrice = (priceJOD) => {
+    return currency === "USD" ? (priceJOD * 1.41).toFixed(2) : priceJOD;
+  };
+
+  const currencySymbol = currency === "USD" ? "$" : "JOD";
 
   return (
     <div className={`${language === 'ar' ? 'rtl' : 'ltr'} py-8`}>
@@ -50,15 +58,15 @@ const BookingPage = ({
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>{t('perDay')}:</span>
-                    <span className="font-bold">${selectedCar.PRICEPERDAY}</span>
+                    <span className="font-bold">{currencySymbol} {convertPrice(selectedCar.PRICEPERDAY)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{t('perWeek')}:</span>
-                    <span className="font-bold">${selectedCar.priceperweek}</span>
+                    <span className="font-bold">{currencySymbol} {convertPrice(selectedCar.priceperweek)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{t('perMonth')}:</span>
-                    <span className="font-bold">${selectedCar.pricepermonth}</span>
+                    <span className="font-bold">{currencySymbol} {convertPrice(selectedCar.pricepermonth)}</span>
                   </div>
                 </div>
               </div>
@@ -130,9 +138,9 @@ const BookingPage = ({
               <h3 className="text-xl font-bold mb-4">{t('insurance')}</h3>
               <div className="space-y-3">
                 {[
-                  { id: 'basic', name: t('basicInsurance'), price: 5, desc: 'Basic coverage for accidents' },
-                  { id: 'full', name: t('fullInsurance'), price: 10, desc: 'Comprehensive coverage' },
-                  { id: 'premium', name: t('premiumInsurance'), price: 15, desc: 'Premium coverage with 24/7 support' }
+                  { id: 'basic', name: t('basicInsurance'), priceJOD: 5, desc: 'Basic coverage for accidents' },
+                  { id: 'full', name: t('fullInsurance'), priceJOD: 10, desc: 'Comprehensive coverage' },
+                  { id: 'premium', name: t('premiumInsurance'), priceJOD: 15, desc: 'Premium coverage with 24/7 support' }
                 ].map(insurance => (
                   <label key={insurance.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                     <input
@@ -146,7 +154,7 @@ const BookingPage = ({
                     <div className="flex-1">
                       <div className="flex justify-between items-center">
                         <span className="font-medium">{insurance.name}</span>
-                        <span className="text-blue-900 font-bold">${insurance.price}/day</span>
+                        <span className="text-blue-900 font-bold">{currencySymbol} {convertPrice(insurance.priceJOD)}/day</span>
                       </div>
                       <p className="text-sm text-gray-600">{insurance.desc}</p>
                     </div>
@@ -159,10 +167,10 @@ const BookingPage = ({
               <h3 className="text-xl font-bold mb-4">{t('additionalServices')}</h3>
               <div className="space-y-3">
                 {[
-                  { id: 'phone', name: t('mobilePhone'), price: 3, icon: Phone },
-                  { id: 'wifi', name: t('wifi'), price: 2, icon: Wifi },
-                  { id: 'gps', name: t('gps'), price: 2, icon: MapPin },
-                  { id: 'childSeat', name: t('childSeat'), price: 1, icon: Shield }
+                  { id: 'phone', name: t('mobilePhone'), priceJOD: 3, icon: Phone },
+                  { id: 'wifi', name: t('wifi'), priceJOD: 2, icon: Wifi },
+                  { id: 'gps', name: t('gps'), priceJOD: 2, icon: MapPin },
+                  { id: 'childSeat', name: t('childSeat'), priceJOD: 1, icon: Shield }
                 ].map(service => (
                   <label key={service.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                     <input
@@ -179,7 +187,7 @@ const BookingPage = ({
                     <service.icon className="text-blue-900" size={20} />
                     <div className="flex-1 flex justify-between items-center">
                       <span>{service.name}</span>
-                      <span className="text-blue-900 font-bold">${service.price}/day</span>
+                      <span className="text-blue-900 font-bold">{currencySymbol} {convertPrice(service.priceJOD)}/day</span>
                     </div>
                   </label>
                 ))}
@@ -238,24 +246,24 @@ const BookingPage = ({
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between">
                   <span>{t('basePrice')} ({bookingData.days} days):</span>
-                  <span>${pricing.basePrice}</span>
+                  <span>{currencySymbol} {convertPrice(pricing.basePrice)}</span>
                 </div>
                 {pricing.insurancePrice > 0 && (
                   <div className="flex justify-between">
                     <span>{t('insurancePrice')}:</span>
-                    <span>${pricing.insurancePrice}</span>
+                    <span>{currencySymbol} {convertPrice(pricing.insurancePrice)}</span>
                   </div>
                 )}
                 {pricing.servicesPrice > 0 && (
                   <div className="flex justify-between">
                     <span>{t('servicesPrice')}:</span>
-                    <span>${pricing.servicesPrice}</span>
+                    <span>{currencySymbol} {convertPrice(pricing.servicesPrice)}</span>
                   </div>
                 )}
                 <div className="border-t pt-2">
                   <div className="flex justify-between text-xl font-bold text-blue-900">
                     <span>{t('totalPrice')}:</span>
-                    <span>${pricing.total}</span>
+                    <span>{currencySymbol} {convertPrice(pricing.total)}</span>
                   </div>
                 </div>
               </div>

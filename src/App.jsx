@@ -11,6 +11,7 @@ import ChatBot from "./components/ChatBot";
 
 const App = () => {
   const [language, setLanguage] = useState("ar");
+  const [currency, setCurrency] = useState("JOD"); // JOD or USD
   const [currentPage, setCurrentPage] = useState("home");
   const [selectedCar, setSelectedCar] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -89,6 +90,8 @@ const App = () => {
         setLanguage={handleLanguageChange}
         currentPage={currentPage}
         setCurrentPage={handlePageChange}
+        currency={currency}
+        setCurrency={setCurrency}
       />
 
       <main className="relative overflow-hidden">
@@ -104,6 +107,7 @@ const App = () => {
               language={language}
               setCurrentPage={handlePageChange}
               setSelectedCar={setSelectedCar}
+              currency={currency}
             />
           )}
           {currentPage === "cars" && (
@@ -113,6 +117,7 @@ const App = () => {
               setSearchFilters={setSearchFilters}
               setSelectedCar={setSelectedCar}
               setCurrentPage={handlePageChange}
+              currency={currency}
             />
           )}
           {currentPage === "booking" && selectedCar && (
@@ -123,6 +128,7 @@ const App = () => {
               setBookingData={setBookingData}
               setCurrentPage={handlePageChange}
               handleBookingSubmit={handleBookingSubmit}
+              currency={currency}
             />
           )}
           {currentPage === "contact-us" && (

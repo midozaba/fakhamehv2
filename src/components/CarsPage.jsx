@@ -3,8 +3,15 @@ import { useTranslation } from '../utils/translations';
 import { getCarImage, categorizeCarType } from '../utils/carHelpers';
 import carsData from '../data/cars.json';
 
-const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, setCurrentPage }) => {
+const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, setCurrentPage, currency }) => {
   const t = useTranslation(language);
+
+  // Conversion rate: 1 JOD = 1.41 USD
+  const convertPrice = (priceJOD) => {
+    return currency === "USD" ? (priceJOD * 1.41).toFixed(2) : priceJOD;
+  };
+
+  const currencySymbol = currency === "USD" ? "$" : "JOD";
 
   const filteredCars = carsData.filter(car => {
     if (searchFilters.category !== 'all') {
@@ -49,9 +56,9 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, s
                 className="w-full p-3 border rounded-lg"
               >
                 <option value="all">All Prices</option>
-                <option value="low">$15-25 per day</option>
-                <option value="medium">$26-40 per day</option>
-                <option value="high">$41+ per day</option>
+                <option value="low">JOD 15-25 per day</option>
+                <option value="medium">JOD 26-40 per day</option>
+                <option value="high">JOD 41+ per day</option>
               </select>
             </div>
           </div>
@@ -75,10 +82,10 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, s
                 </div>
                 <div className="mb-4">
                   <div className="text-2xl font-bold text-blue-900 mb-1">
-                    ${car.PRICEPERDAY} <span className="text-sm text-gray-500">{t('perDay')}</span>
+                    {currencySymbol} {convertPrice(car.PRICEPERDAY)} <span className="text-sm text-gray-500">{t('perDay')}</span>
                   </div>
                   <div className="text-sm text-gray-600">
-                    ${car.priceperweek} {t('perWeek')} • ${car.pricepermonth} {t('perMonth')}
+                    {currencySymbol} {convertPrice(car.priceperweek)} {t('perWeek')} • {currencySymbol} {convertPrice(car.pricepermonth)} {t('perMonth')}
                   </div>
                 </div>
                 <button

@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "../utils/translations";
 
-const Header = ({ language, setLanguage, currentPage, setCurrentPage }) => {
+const Header = ({ language, setLanguage, currentPage, setCurrentPage, currency, setCurrency }) => {
   const t = useTranslation(language);
 
   return (
@@ -90,13 +90,21 @@ const Header = ({ language, setLanguage, currentPage, setCurrentPage }) => {
             </button>
           </nav>
 
-          {/* Language Toggle */}
-          <button
-            onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
-            className="bg-gradient-to-r from-slate-400 to-blue-900 text-white px-1.5 py-1 text-xs rounded hover:opacity-90 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 justify-self-end"
-          >
-            {language === "ar" ? "English" : "العربية"}
-          </button>
+          {/* Language and Currency Toggle */}
+          <div className="flex items-center gap-2 justify-self-end">
+            <button
+              onClick={() => setCurrency(currency === "JOD" ? "USD" : "JOD")}
+              className="bg-gradient-to-r from-green-600 to-green-800 text-white px-1.5 py-1 text-xs rounded hover:opacity-90 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+            >
+              {currency}
+            </button>
+            <button
+              onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
+              className="bg-gradient-to-r from-slate-400 to-blue-900 text-white px-1.5 py-1 text-xs rounded hover:opacity-90 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+            >
+              {language === "ar" ? "English" : "العربية"}
+            </button>
+          </div>
         </div>
       </div>
     </header>
