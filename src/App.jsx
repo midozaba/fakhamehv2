@@ -5,6 +5,7 @@ import Header from "./components/Header";
 import HomePage from "./components/HomePage";
 import CarsPage from "./components/CarsPage";
 import BookingPage from "./components/BookingPage";
+import ContactUs from "./components/ContactUs";
 import Footer from "./components/Footer";
 import ChatBot from "./components/ChatBot";
 
@@ -122,6 +123,11 @@ const App = () => {
               setBookingData={setBookingData}
               setCurrentPage={handlePageChange}
               handleBookingSubmit={handleBookingSubmit}
+            />
+          )}
+          {currentPage === "contact-us" && (
+            <ContactUs
+              language={language}
             />
           )}
         </div>

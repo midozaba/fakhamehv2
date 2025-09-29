@@ -4,7 +4,11 @@ export const translations = {
     home: 'الرئيسية',
     cars: 'السيارات',
     about: 'من نحن',
+    'about us': 'من نحن',
     contact: 'اتصل بنا',
+    'contact us': 'اتصل بنا',
+    'terms of service': 'شروط الخدمة',
+    'TOS': 'شروط الخدمة',
 
     // Hero Section
     heroTitle: 'الفخامة لتأجير السيارات',
@@ -69,7 +73,7 @@ export const translations = {
     // Chat
     chatTitle: 'مساعد الحجز',
     chatPlaceholder: 'اسأل عن السيارات أو خدمات الحجز...',
-    sendMessage: 'إرسال',
+    sendChatMessage: 'إرسال',
     orSimilar: 'أو مشابه',
 
     // Footer
@@ -79,6 +83,32 @@ export const translations = {
     // Messages
     bookingSuccess: 'تم إرسال طلب الحجز بنجاح! سيتم التواصل معك قريباً.',
     fillAllFields: 'يرجى ملء جميع الحقول المطلوبة',
+    contactSuccess: 'شكراً لتواصلك مع الفخامة لتأجير السيارات! سيقوم فريقنا بالرد عليك خلال 24 ساعة لمساعدتك في اختيار السيارة المثالية.',
+    messageSent: 'تم إرسال الرسالة!',
+    close: 'إغلاق',
+
+    // Contact Page
+    contactUs: 'اتصل بنا',
+    contactDescription: 'نحن هنا لمساعدتك! تواصل معنا لأي استفسارات حول خدمات تأجير السيارات أو للحصول على مساعدة في الحجز.',
+    sendMessage: 'إرسال رسالة',
+    contactInfo: 'معلومات الاتصال',
+    subject: 'الموضوع',
+    message: 'الرسالة',
+    enterName: 'أدخل اسمك الكامل',
+    enterEmail: 'أدخل بريدك الإلكتروني',
+    enterPhone: 'أدخل رقم هاتفك',
+    enterSubject: 'أدخل موضوع الرسالة',
+    enterMessage: 'أدخل رسالتك هنا...',
+    sending: 'جاري الإرسال...',
+    address: 'العنوان',
+    workingHours: 'ساعات العمل',
+    findUs: 'موقعنا',
+    mapPlaceholder: 'خريطة الموقع',
+    viewOnMaps: 'عرض في خرائط جوجل',
+    companyAddress: 'عمان، الأردن - منطقة جبيهة',
+    companyPhone: '+962 7 7776 9776',
+    companyEmail: 'info@alfakhama.com',
+    companyHours: 'السبت - الخميس: 10:00 ص - 6:00 م',
 
     // Colors
     white: 'أبيض',
@@ -101,7 +131,11 @@ export const translations = {
     home: 'Home',
     cars: 'Cars',
     about: 'About',
+    'about us': 'About Us',
     contact: 'Contact',
+    'contact us': 'Contact Us',
+    'terms of service': 'Terms of Service',
+    'TOS': 'Terms of Service',
 
     // Hero Section
     heroTitle: 'Al Fakhama Car Rental',
@@ -166,7 +200,7 @@ export const translations = {
     // Chat
     chatTitle: 'Booking Assistant',
     chatPlaceholder: 'Ask about cars or booking services...',
-    sendMessage: 'Send',
+    sendChatMessage: 'Send',
     orSimilar: 'or similar',
 
     // Footer
@@ -176,6 +210,32 @@ export const translations = {
     // Messages
     bookingSuccess: 'Booking request sent successfully! We will contact you soon.',
     fillAllFields: 'Please fill in all required fields',
+    contactSuccess: 'Thank you for contacting Al Fakhama Car Rental! Our team will respond within 24 hours to help you find the perfect vehicle for your needs.',
+    messageSent: 'Message Sent!',
+    close: 'Close',
+
+    // Contact Page
+    contactUs: 'Contact Us',
+    contactDescription: 'We are here to help you! Contact us for any inquiries about car rental services or to get assistance with your booking.',
+    sendMessage: 'Send Message',
+    contactInfo: 'Contact Information',
+    subject: 'Subject',
+    message: 'Message',
+    enterName: 'Enter your full name',
+    enterEmail: 'Enter your email address',
+    enterPhone: 'Enter your phone number',
+    enterSubject: 'Enter message subject',
+    enterMessage: 'Enter your message here...',
+    sending: 'Sending...',
+    address: 'Address',
+    workingHours: 'Working Hours',
+    findUs: 'Find Us',
+    mapPlaceholder: 'Location Map',
+    viewOnMaps: 'View on Google Maps',
+    companyAddress: 'Amman, Jordan - Jbeiha Area',
+    companyPhone: '+962 7 7776 9776',
+    companyEmail: 'info@alfakhama.com',
+    companyHours: 'Saturday - Thursday: 10:00 AM - 6:00 PM',
 
     // Colors
     white: 'White',

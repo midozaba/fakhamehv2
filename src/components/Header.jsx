@@ -55,6 +55,39 @@ const Header = ({ language, setLanguage, currentPage, setCurrentPage }) => {
             >
               {t("cars")}
             </button>
+            {/* TOS Button */}
+            <button
+              onClick={() => setCurrentPage("TOS")}
+              className={`px-2 py-1 text-xs rounded transition-all duration-300 ease-in-out justify-self-center ${
+                currentPage === "TOS"
+                  ? "bg-blue-900 text-white"
+                  : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
+              }`}
+            >
+              {t("terms of service")}
+            </button>
+            {/* About us Button */}
+            <button
+              onClick={() => setCurrentPage("about-us")}
+              className={`px-2 py-1 text-xs rounded transition-all duration-300 ease-in-out justify-self-center ${
+                currentPage === "about-us"
+                  ? "bg-blue-900 text-white"
+                  : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
+              }`}
+            >
+              {t("about us")}
+            </button>
+            {/* Contact us Button */}
+            <button
+              onClick={() => setCurrentPage("contact-us")}
+              className={`px-2 py-1 text-xs rounded transition-all duration-300 ease-in-out justify-self-center ${
+                currentPage === "contact-us"
+                  ? "bg-blue-900 text-white"
+                  : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
+              }`}
+            >
+              {t("contact us")}
+            </button>
           </nav>
 
           {/* Language Toggle */}
