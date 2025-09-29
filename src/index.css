@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@theme {
+  /* TODO: Update these colors to match Al Fakhama company brand colors */
+  --color-primary: #3490dc;
+  --color-secondary: #ffed4a;
+  --color-danger: #e3342f;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

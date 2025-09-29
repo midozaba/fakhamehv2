@@ -102,14 +102,14 @@ const ChatBot = ({ language }) => {
           }
         }
       `}</style>
-      {/* Main ChatBot Container - Fixed positioning for bottom corner */}
+      {/* Main ChatBot Container */}
       <div
         className={`fixed bottom-5 ${
           language === "ar" ? "left-4" : "right-4"
         } z-50`}
       >
         {(chatOpen || isClosing) && (
-          /* Chat Window Container - White background with shadow */
+          /* Chat Window Container */
           <div
             className={`bg-white rounded-lg shadow-xl w-64 h-[23.25rem] mb-4 border-2 border-blue-100 transform transition-all duration-500 ease-out ${
               chatOpen
@@ -122,7 +122,7 @@ const ChatBot = ({ language }) => {
                 : "fadeSlideUp 0.25s ease-out",
             }}
           >
-            {/* Chat Header - Blue gradient with title and close button */}
+            {/* Chat Header */}
             <div
               className={`bg-gradient-to-r from-blue-900 to-slate-600 text-white px-3 py-1 rounded-t-lg flex justify-between items-center ${
                 language === "ar" ? "pl-0" : "pr-0"
@@ -137,14 +137,14 @@ const ChatBot = ({ language }) => {
               </button>
             </div>
 
-            {/* Chat Messages Area - Scrollable container for messages */}
+            {/* Chat Messages Area*/}
             <div
               className="font-serif h-64 overflow-y-auto p-4 space-y-3"
               id="chat-messages"
             >
               {chatMessages.length === 0 && (
-                /* Welcome Message - Shows when no messages */
-                <div className=" bg-gray-100 p-3 rounded-lg ">
+                /* Welcome Message */
+                <div className=" bg-gray-300 p-3 rounded-lg bg-gray-300 text-gray-800 rounded-tl-2xl rounded-tr-2xl rounded-bl-sm rounded-br-2xl ">
                   {language === "ar"
                     ? "مرحباً! كيف يمكنني مساعدتك في حجز السيارة المناسبة؟ يمكنك سؤالي عن الأسعار، التأمين، أو السيارات المتاحة."
                     : "Hello! How can I help you book the right car? You can ask me about prices, insurance, or available cars."}
@@ -152,7 +152,7 @@ const ChatBot = ({ language }) => {
               )}
 
               {chatMessages.map((message, index) => (
-                /* Individual Message - User or bot message bubble */
+                /* Individual Message */
                 <div
                   key={index}
                   className={`flex ${
@@ -168,12 +168,8 @@ const ChatBot = ({ language }) => {
                   <div
                     className={`max-w-xs p-3 ${
                       message.type === "user"
-                        ? language === "ar"
-                          ? "bg-blue-500 text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl rounded-br-sm"
-                          : "bg-blue-500 text-white rounded-tl-2xl rounded-tr-2xl rounded-br-2xl rounded-bl-sm"
-                        : language === "ar"
-                        ? "bg-gray-200 text-gray-800 rounded-tl-2xl rounded-tr-2xl rounded-br-2xl rounded-bl-sm"
-                        : "bg-gray-200 text-gray-800 rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl rounded-br-sm"
+                        ? "bg-blue-500 text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl rounded-br-sm"
+                        : "bg-gray-300 text-gray-800 rounded-tl-2xl rounded-tr-2xl rounded-bl-sm rounded-br-2xl"
                     }`}
                   >
                     {message.text}
@@ -182,9 +178,9 @@ const ChatBot = ({ language }) => {
               ))}
             </div>
 
-            {/* Chat Input Area - Input field and send button */}
+            {/* Chat Input Area */}
             <div className="px-1 py-2 border-0 ">
-              {/* Input Container - Flex layout for input and button */}
+              {/* Input Container */}
               <div
                 className={`flex py-0.5 gap-1 ${
                   language === "ar" ? "space-x-reverse" : ""
@@ -204,7 +200,7 @@ const ChatBot = ({ language }) => {
                   className="flex-1 p-2 border-solid border-1 border-blue-100 rounded-lg text-sm focus:outline-none"
                   dir={language === "ar" ? "rtl" : "ltr"}
                 />
-                {/* Send Button - Arrow button to send message */}
+                {/* Send Button */}
                 <button
                   onClick={() => {
                     if (chatInput.trim()) {
@@ -234,7 +230,7 @@ const ChatBot = ({ language }) => {
         )}
 
         {!chatOpen && (
-          /* Chat Toggle Button - Floating chat icon when chat is closed */
+          /* Chat Toggle Button */
           <button
             onClick={() => setChatOpen(!chatOpen)}
             className="bg-gradient-to-r from-blue-900 to-slate-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all animate-pulse"

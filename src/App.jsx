@@ -12,6 +12,7 @@ const App = () => {
   const [language, setLanguage] = useState("ar");
   const [currentPage, setCurrentPage] = useState("home");
   const [selectedCar, setSelectedCar] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [searchFilters, setSearchFilters] = useState({
     category: "all",
     priceRange: "all",
@@ -31,6 +32,27 @@ const App = () => {
   });
 
   const t = useTranslation(language);
+
+  // Smooth page transition handler
+  const handlePageChange = (newPage) => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentPage(newPage);
+      setIsTransitioning(false);
+      // Scroll to top after page change
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 150); // Half of transition duration
+  };
+
+  // Smooth language change handler
+  const handleLanguageChange = (newLanguage) => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setLanguage(newLanguage);
+      setIsTransitioning(false);
+       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 150);
+  };
 
   const handleBookingSubmit = () => {
     const { name, email, phone, license } = bookingData.customerInfo;
@@ -52,7 +74,7 @@ const App = () => {
     });
 
     alert(t("bookingSuccess"));
-    setCurrentPage("home");
+    handlePageChange("home");
     setSelectedCar(null);
   };
 
@@ -63,38 +85,46 @@ const App = () => {
     >
       <Header
         language={language}
-        setLanguage={setLanguage}
+        setLanguage={handleLanguageChange}
         currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
+        setCurrentPage={handlePageChange}
       />
 
-      <main>
-        {currentPage === "home" && (
-          <HomePage
-            language={language}
-            setCurrentPage={setCurrentPage}
-            setSelectedCar={setSelectedCar}
-          />
-        )}
-        {currentPage === "cars" && (
-          <CarsPage
-            language={language}
-            searchFilters={searchFilters}
-            setSearchFilters={setSearchFilters}
-            setSelectedCar={setSelectedCar}
-            setCurrentPage={setCurrentPage}
-          />
-        )}
-        {currentPage === "booking" && selectedCar && (
-          <BookingPage
-            language={language}
-            selectedCar={selectedCar}
-            bookingData={bookingData}
-            setBookingData={setBookingData}
-            setCurrentPage={setCurrentPage}
-            handleBookingSubmit={handleBookingSubmit}
-          />
-        )}
+      <main className="relative overflow-hidden">
+        <div
+          className={`transition-all duration-300 ease-in-out ${
+            isTransitioning
+              ? 'opacity-0 transform translate-y-4'
+              : 'opacity-100 transform translate-y-0'
+          }`}
+        >
+          {currentPage === "home" && (
+            <HomePage
+              language={language}
+              setCurrentPage={handlePageChange}
+              setSelectedCar={setSelectedCar}
+            />
+          )}
+          {currentPage === "cars" && (
+            <CarsPage
+              language={language}
+              searchFilters={searchFilters}
+              setSearchFilters={setSearchFilters}
+              setSelectedCar={setSelectedCar}
+              setCurrentPage={handlePageChange}
+            />
+          )}
+          {currentPage === "booking" && selectedCar && (
+            <BookingPage
+              language={language}
+              selectedCar={selectedCar}
+              bookingData={bookingData}
+              setBookingData={setBookingData}
+              setCurrentPage={handlePageChange}
+              handleBookingSubmit={handleBookingSubmit}
+            />
+          )}
+        </div>
       </main>
 
       <Footer language={language} />
