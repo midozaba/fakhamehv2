@@ -11,7 +11,17 @@ import Footer from "./components/Footer";
 import ChatBot from "./components/ChatBot";
 
 const App = () => {
-  const [language, setLanguage] = useState("ar");
+  // Detect browser language and set initial language
+  const getBrowserLanguage = () => {
+    const browserLang = navigator.language || navigator.userLanguage;
+    // Check if browser language is Arabic
+    if (browserLang.startsWith('ar')) {
+      return 'ar';
+    }
+    return 'en';
+  };
+
+  const [language, setLanguage] = useState(getBrowserLanguage());
   const [currency, setCurrency] = useState("JOD"); // JOD or USD
   const [currentPage, setCurrentPage] = useState("home");
   const [selectedCar, setSelectedCar] = useState(null);

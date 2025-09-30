@@ -78,7 +78,7 @@ export const translations = {
     whyChooseUs: 'لماذا نحن؟',
 
     // Footer
-    aboutUs: 'نحن شركة الفخامة لتأجير السيارات، نقدم أفضل خدمات التأجير في الأردن',
+    aboutUs: 'شريكك الموثوق لتأجير السيارات في الأردن مع خدمة متميزة وأسعار تنافسية.',
     followUs: 'تابعنا',
 
     // Messages
@@ -240,7 +240,7 @@ export const translations = {
     whyChooseUs: 'Why Choose Us?',
 
     // Footer
-    aboutUs: 'We are Al Fakhama Car Rental, providing the best rental services in Jordan',
+    aboutUs: 'Your trusted car rental partner in Jordan with exceptional service and competitive prices.',
     followUs: 'Follow Us',
 
     // Messages
@@ -270,7 +270,7 @@ export const translations = {
     viewOnMaps: 'View on Google Maps',
     companyAddress: 'Amman, Jordan - Jbeiha Area',
     companyPhone: '+962 7 7776 9776',
-    companyEmail: 'info@alfakhama.com',
+    companyEmail: 'TODO: Get the company email', // TODO: Get the company email
     companyHours: 'Saturday - Thursday: 10:00 AM - 6:00 PM',
     companyName: 'Al Fakhama Car Rental Company',
 

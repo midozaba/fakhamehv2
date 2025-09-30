@@ -1,6 +1,8 @@
 import React from 'react';
-import { Car, Phone, Mail, MapPin } from 'lucide-react';
+import { Phone, Mail, MapPin } from 'lucide-react';
 import { useTranslation } from '../utils/translations';
+import logo from '../assets/FakhamehLogo.png';
+import logoText from '../assets/Untitled_design-removebg-preview.png';
 
 const Footer = ({ language }) => {
   const t = useTranslation(language);
@@ -11,13 +13,8 @@ const Footer = ({ language }) => {
         <div className="grid md:grid-cols-3 gap-8">
           <div>
             <div className="flex items-center space-x-4 mb-6">
-              <div className="bg-gradient-to-br from-slate-400 to-blue-900 p-3 rounded-lg">
-                <Car className="text-white" size={24} />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold">AL FAKHAMA</h3>
-                <p className="text-gray-400">car rental</p>
-              </div>
+              <img src={logo} alt="AL FAKHAMA" className="h-20 w-auto" />
+              <img src={logoText} alt="AL FAKHAMA" className="h-12 w-auto" />
             </div>
             <p className="text-gray-400">{t('aboutUs')}</p>
           </div>
@@ -31,7 +28,7 @@ const Footer = ({ language }) => {
               </div>
               <div className="flex items-center space-x-3">
                 <Mail size={18} className="text-slate-400" />
-                <span>info@alfakhama.com</span>
+                <span>{t("companyEmail")}</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin size={18} className="text-slate-400" />
