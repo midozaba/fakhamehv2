@@ -75,6 +75,7 @@ export const translations = {
     chatPlaceholder: 'اسأل عن السيارات أو خدمات الحجز...',
     sendChatMessage: 'إرسال',
     orSimilar: 'أو مشابه',
+    whyChooseUs: 'لماذا نحن؟',
 
     // Footer
     aboutUs: 'نحن شركة الفخامة لتأجير السيارات، نقدم أفضل خدمات التأجير في الأردن',
@@ -236,6 +237,7 @@ export const translations = {
     chatPlaceholder: 'Ask about cars or booking services...',
     sendChatMessage: 'Send',
     orSimilar: 'or similar',
+    whyChooseUs: 'Why Choose Us?',
 
     // Footer
     aboutUs: 'We are Al Fakhama Car Rental, providing the best rental services in Jordan',

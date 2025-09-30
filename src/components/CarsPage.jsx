@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from '../utils/translations';
 import { getCarImage, categorizeCarType } from '../utils/carHelpers';
 import carsData from '../data/cars.json';
 
 const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, setCurrentPage, currency }) => {
   const t = useTranslation(language);
+  const [visibleCards, setVisibleCards] = useState(new Set());
+  const cardRefs = useRef([]);
 
   // Conversion rate: 1 JOD = 1.41 USD
   const convertPrice = (priceJOD) => {
@@ -25,6 +27,41 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, s
     }
     return true;
   });
+
+  useEffect(() => {
+    cardRefs.current = [];
+    setVisibleCards(new Set());
+  }, [searchFilters]);
+
+  useEffect(() => {
+    const observers = [];
+
+    cardRefs.current.forEach((ref, index) => {
+      if (ref) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                setVisibleCards((prev) => new Set([...prev, index]));
+              }
+            });
+          },
+          { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+        );
+
+        observer.observe(ref);
+        observers.push(observer);
+      }
+    });
+
+    return () => observers.forEach((observer) => observer.disconnect());
+  }, [filteredCars]);
+
+  const addToRefs = (el) => {
+    if (el && !cardRefs.current.includes(el)) {
+      cardRefs.current.push(el);
+    }
+  };
 
   return (
     <div className={`${language === 'ar' ? 'rtl' : 'ltr'} py-8`}>
@@ -64,9 +101,20 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, s
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCars.map(car => (
-            <div key={car.car_id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all">
+        <div className="grid md:grid-cols-2 gap-6 overflow-hidden">
+          {filteredCars.map((car, idx) => (
+            <div
+              key={car.car_id}
+              ref={addToRefs}
+              className={`bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-1000 ${
+                visibleCards.has(idx)
+                  ? 'opacity-100 translate-x-0'
+                  : idx % 2 === 0
+                    ? 'opacity-0 translate-x-64'
+                    : 'opacity-0 -translate-x-64'
+              }`}
+              style={{ transitionDelay: `${(idx % 2) * 200}ms` }}
+            >
               <img
                 src={getCarImage(car.car_barnd, car.CAR_TYPE)}
                 alt={`${car.car_barnd} ${car.CAR_TYPE}`}
