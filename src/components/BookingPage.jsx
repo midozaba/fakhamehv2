@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Users, Fuel, Shield, Star, Phone, Wifi, MapPin } from 'lucide-react';
 import { useTranslation } from '../utils/translations';
 import { getCarImage, calculatePrice } from '../utils/carHelpers';
@@ -8,11 +9,18 @@ const BookingPage = ({
   selectedCar,
   bookingData,
   setBookingData,
-  setCurrentPage,
   handleBookingSubmit,
   currency
 }) => {
+  const navigate = useNavigate();
   const t = useTranslation(language);
+
+  // If no car selected, redirect to cars page
+  if (!selectedCar) {
+    navigate('/cars');
+    return null;
+  }
+
   const pricing = calculatePrice(selectedCar, bookingData);
 
   // Conversion rate: 1 JOD = 1.41 USD
@@ -26,7 +34,7 @@ const BookingPage = ({
     <div className={`${language === 'ar' ? 'rtl' : 'ltr'} py-8`}>
       <div className="container mx-auto px-4">
         <button
-          onClick={() => setCurrentPage('cars')}
+          onClick={() => navigate('/cars')}
           className="mb-6 flex items-center text-blue-900 hover:text-blue-700"
         >
           {language === 'ar' ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}

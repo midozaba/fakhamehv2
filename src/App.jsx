@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import "./index.css";
 import { useTranslation } from "./utils/translations";
 import Header from "./components/Header";
@@ -7,23 +8,27 @@ import CarsPage from "./components/CarsPage";
 import BookingPage from "./components/BookingPage";
 import ContactUs from "./components/ContactUs";
 import TermsOfService from "./components/TermsOfService";
+import AboutUs from "./components/AboutUs";
+import NotFound from "./components/NotFound";
 import Footer from "./components/Footer";
 import ChatBot from "./components/ChatBot";
 
-const App = () => {
-  // Detect browser language and set initial language
-  const getBrowserLanguage = () => {
-    const browserLang = navigator.language || navigator.userLanguage;
-    // Check if browser language is Arabic
-    if (browserLang.startsWith('ar')) {
-      return 'ar';
-    }
-    return 'en';
-  };
+// Detect browser language
+const getBrowserLanguage = () => {
+  const browserLang = navigator.language || navigator.userLanguage;
+  if (browserLang.startsWith('ar')) {
+    return 'ar';
+  }
+  return 'en';
+};
+
+// Main App Layout Component (needs to be inside Router)
+const AppLayout = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [language, setLanguage] = useState(getBrowserLanguage());
-  const [currency, setCurrency] = useState("JOD"); // JOD or USD
-  const [currentPage, setCurrentPage] = useState("home");
+  const [currency, setCurrency] = useState("JOD");
   const [selectedCar, setSelectedCar] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [searchFilters, setSearchFilters] = useState({
@@ -46,21 +51,10 @@ const App = () => {
 
   const t = useTranslation(language);
 
-  // Scroll to top on initial load without smooth scrolling
+  // Scroll to top on route change
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  // Smooth page transition handler
-  const handlePageChange = (newPage) => {
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setCurrentPage(newPage);
-      setIsTransitioning(false);
-      // Scroll to top after page change
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 150); // Half of transition duration
-  };
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [location.pathname]);
 
   // Smooth language change handler
   const handleLanguageChange = (newLanguage) => {
@@ -68,7 +62,6 @@ const App = () => {
     setTimeout(() => {
       setLanguage(newLanguage);
       setIsTransitioning(false);
-       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 150);
   };
 
@@ -92,7 +85,7 @@ const App = () => {
     });
 
     alert(t("bookingSuccess"));
-    handlePageChange("home");
+    navigate("/");
     setSelectedCar(null);
   };
 
@@ -104,8 +97,6 @@ const App = () => {
       <Header
         language={language}
         setLanguage={handleLanguageChange}
-        currentPage={currentPage}
-        setCurrentPage={handlePageChange}
         currency={currency}
         setCurrency={setCurrency}
       />
@@ -118,51 +109,73 @@ const App = () => {
               : 'opacity-100 transform translate-y-0'
           }`}
         >
-          {currentPage === "home" && (
-            <HomePage
-              language={language}
-              setCurrentPage={handlePageChange}
-              setSelectedCar={setSelectedCar}
-              currency={currency}
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <HomePage
+                  language={language}
+                  setSelectedCar={setSelectedCar}
+                  currency={currency}
+                />
+              }
             />
-          )}
-          {currentPage === "cars" && (
-            <CarsPage
-              language={language}
-              searchFilters={searchFilters}
-              setSearchFilters={setSearchFilters}
-              setSelectedCar={setSelectedCar}
-              setCurrentPage={handlePageChange}
-              currency={currency}
+            <Route
+              path="/cars"
+              element={
+                <CarsPage
+                  language={language}
+                  searchFilters={searchFilters}
+                  setSearchFilters={setSearchFilters}
+                  setSelectedCar={setSelectedCar}
+                  currency={currency}
+                />
+              }
             />
-          )}
-          {currentPage === "booking" && selectedCar && (
-            <BookingPage
-              language={language}
-              selectedCar={selectedCar}
-              bookingData={bookingData}
-              setBookingData={setBookingData}
-              setCurrentPage={handlePageChange}
-              handleBookingSubmit={handleBookingSubmit}
-              currency={currency}
+            <Route
+              path="/booking/:carId?"
+              element={
+                <BookingPage
+                  language={language}
+                  selectedCar={selectedCar}
+                  bookingData={bookingData}
+                  setBookingData={setBookingData}
+                  handleBookingSubmit={handleBookingSubmit}
+                  currency={currency}
+                />
+              }
             />
-          )}
-          {currentPage === "contact-us" && (
-            <ContactUs
-              language={language}
+            <Route
+              path="/contact"
+              element={<ContactUs language={language} />}
             />
-          )}
-          {currentPage === "TOS" && (
-            <TermsOfService
-              language={language}
+            <Route
+              path="/terms"
+              element={<TermsOfService language={language} />}
             />
-          )}
+            <Route
+              path="/about"
+              element={<AboutUs language={language} />}
+            />
+            <Route
+              path="*"
+              element={<NotFound language={language} />}
+            />
+          </Routes>
         </div>
       </main>
 
       <Footer language={language} />
       <ChatBot language={language} />
     </div>
+  );
+};
+
+const App = () => {
+  return (
+    <Router>
+      <AppLayout />
+    </Router>
   );
 };
 

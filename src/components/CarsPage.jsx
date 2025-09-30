@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../utils/translations';
 import { getCarImage, categorizeCarType } from '../utils/carHelpers';
 import carsData from '../data/cars.json';
 
-const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, setCurrentPage, currency }) => {
+const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, currency }) => {
+  const navigate = useNavigate();
   const t = useTranslation(language);
   const [visibleCards, setVisibleCards] = useState(new Set());
   const cardRefs = useRef([]);
@@ -146,7 +148,7 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, s
                   <button
                     onClick={() => {
                       setSelectedCar(car);
-                      setCurrentPage('booking');
+                      navigate('/booking');
                     }}
                     className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-2 text-sm rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all font-semibold transform translate-y-4 group-hover:translate-y-0 duration-500 delay-200 shadow-lg"
                   >

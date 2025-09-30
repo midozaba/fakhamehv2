@@ -1,8 +1,13 @@
 import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useTranslation } from "../utils/translations";
+import logo from '../assets/FakhamehLogo.png';
+import logoText from '../assets/fakhamehtext.png';
 
-const Header = ({ language, setLanguage, currentPage, setCurrentPage, currency, setCurrency }) => {
+const Header = ({ language, setLanguage, currency, setCurrency }) => {
+  const location = useLocation();
+  const currentPage = location.pathname;
   const t = useTranslation(language);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -14,11 +19,11 @@ const Header = ({ language, setLanguage, currentPage, setCurrentPage, currency, 
         {/* Grid Layout */}
         <div className="flex items-center justify-between gap-4">
           {/* Logo Section */}
-          <div className="flex items-center space-x-4 cursor-pointer" onClick={() => setCurrentPage("home")}>
+          <Link to="/" className="flex items-center space-x-4 cursor-pointer">
             {/* Logo */}
             <div className=" justify-end p-3 rounded-lg">
               <img
-                src="/src/assets/FakhamehLogo.png"
+                src={logo}
                 alt="Al Fakhama Logo"
                 className="w-10 h-10 object-contain"
               />
@@ -26,70 +31,70 @@ const Header = ({ language, setLanguage, currentPage, setCurrentPage, currency, 
             {/* Brand Text */}
             <div>
               <img
-                src="/src/assets/fakhamehtext.png"
+                src={logoText}
                 alt="Al Fakhama Text"
                 className="h-10 object-contain"
               />
             </div>
-          </div>
+          </Link>
 
           {/* Navigation */}
           <nav className="hidden md:flex space-x-6 justify-start pr-3">
             {/* Home Button */}
-            <button
-              onClick={() => setCurrentPage("home")}
-              className={`px-2 py-1 text-xs rounded transition-all duration-300 ease-in-out justify-self-center ${
-                currentPage === "home"
+            <Link
+              to="/"
+              className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out justify-self-center ${
+                currentPage === "/"
                   ? "bg-blue-900 text-white"
                   : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
               }`}
             >
               {t("home")}
-            </button>
+            </Link>
             {/* Cars Button */}
-            <button
-              onClick={() => setCurrentPage("cars")}
-              className={`px-2 py-1 text-xs rounded transition-all duration-300 ease-in-out ${
-                currentPage === "cars"
+            <Link
+              to="/cars"
+              className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out ${
+                currentPage === "/cars"
                   ? "bg-blue-900 text-white"
                   : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
               }`}
             >
               {t("cars")}
-            </button>
+            </Link>
             {/* TOS Button */}
-            <button
-              onClick={() => setCurrentPage("TOS")}
-              className={`px-2 py-1 text-xs rounded transition-all duration-300 ease-in-out justify-self-center ${
-                currentPage === "TOS"
+            <Link
+              to="/terms"
+              className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out justify-self-center ${
+                currentPage === "/terms"
                   ? "bg-blue-900 text-white"
                   : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
               }`}
             >
               {t("terms of service")}
-            </button>
+            </Link>
             {/* About us Button */}
-            <button
-              onClick={() => setCurrentPage("about-us")}
-              className={`px-2 py-1 text-xs rounded transition-all duration-300 ease-in-out justify-self-center ${
-                currentPage === "about-us"
+            <Link
+              to="/about"
+              className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out justify-self-center ${
+                currentPage === "/about"
                   ? "bg-blue-900 text-white"
                   : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
               }`}
             >
               {t("about us")}
-            </button>
+            </Link>
             {/* Contact us Button */}
-            <button
-              onClick={() => setCurrentPage("contact-us")}
-              className={`px-2 py-1 text-xs rounded transition-all duration-300 ease-in-out justify-self-center ${
-                currentPage === "contact-us"
+            <Link
+              to="/contact"
+              className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out justify-self-center ${
+                currentPage === "/contact"
                   ? "bg-blue-900 text-white"
                   : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
               }`}
             >
               {t("contact us")}
-            </button>
+            </Link>
           </nav>
 
           {/* Language and Currency Toggle + Mobile Menu Button */}
@@ -122,71 +127,61 @@ const Header = ({ language, setLanguage, currentPage, setCurrentPage, currency, 
         {mobileMenuOpen && (
           <nav className="md:hidden mt-4 pb-4 border-t pt-4">
             <div className="flex flex-col space-y-2">
-              <button
-                onClick={() => {
-                  setCurrentPage("home");
-                  setMobileMenuOpen(false);
-                }}
+              <Link
+                to="/"
+                onClick={() => setMobileMenuOpen(false)}
                 className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out text-left ${
-                  currentPage === "home"
+                  currentPage === "/"
                     ? "bg-blue-900 text-white"
                     : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
                 }`}
               >
                 {t("home")}
-              </button>
-              <button
-                onClick={() => {
-                  setCurrentPage("cars");
-                  setMobileMenuOpen(false);
-                }}
+              </Link>
+              <Link
+                to="/cars"
+                onClick={() => setMobileMenuOpen(false)}
                 className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out text-left ${
-                  currentPage === "cars"
+                  currentPage === "/cars"
                     ? "bg-blue-900 text-white"
                     : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
                 }`}
               >
                 {t("cars")}
-              </button>
-              <button
-                onClick={() => {
-                  setCurrentPage("TOS");
-                  setMobileMenuOpen(false);
-                }}
+              </Link>
+              <Link
+                to="/terms"
+                onClick={() => setMobileMenuOpen(false)}
                 className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out text-left ${
-                  currentPage === "TOS"
+                  currentPage === "/terms"
                     ? "bg-blue-900 text-white"
                     : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
                 }`}
               >
                 {t("terms of service")}
-              </button>
-              <button
-                onClick={() => {
-                  setCurrentPage("about-us");
-                  setMobileMenuOpen(false);
-                }}
+              </Link>
+              <Link
+                to="/about"
+                onClick={() => setMobileMenuOpen(false)}
                 className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out text-left ${
-                  currentPage === "about-us"
+                  currentPage === "/about"
                     ? "bg-blue-900 text-white"
                     : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
                 }`}
               >
                 {t("about us")}
-              </button>
-              <button
-                onClick={() => {
-                  setCurrentPage("contact-us");
-                  setMobileMenuOpen(false);
-                }}
+              </Link>
+              <Link
+                to="/contact"
+                onClick={() => setMobileMenuOpen(false)}
                 className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out text-left ${
-                  currentPage === "contact-us"
+                  currentPage === "/contact"
                     ? "bg-blue-900 text-white"
                     : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
                 }`}
               >
                 {t("contact us")}
-              </button>
+              </Link>
 
               {/* Divider */}
               <div className="border-t my-2"></div>

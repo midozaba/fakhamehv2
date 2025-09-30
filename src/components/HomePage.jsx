@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Car, Shield, Clock, Award, Users, MapPin, Phone, Mail, Star, CheckCircle, Zap, Heart } from 'lucide-react';
 import { useTranslation } from '../utils/translations';
 import { getCarImage } from '../utils/carHelpers';
 import carsData from '../data/cars.json';
 
-const HomePage = ({ language, setCurrentPage, setSelectedCar, currency }) => {
+const HomePage = ({ language, setSelectedCar, currency }) => {
+  const navigate = useNavigate();
   const t = useTranslation(language);
   const [visibleSections, setVisibleSections] = useState(new Set());
   const sectionRefs = useRef([]);
@@ -55,7 +57,7 @@ const HomePage = ({ language, setCurrentPage, setSelectedCar, currency }) => {
             <h1 className="text-5xl md:text-6xl font-bold mb-6">{t('heroTitle')}</h1>
             <p className="text-xl mb-8 opacity-90">{t('heroSubtitle')}</p>
             <button
-              onClick={() => setCurrentPage('cars')}
+              onClick={() => navigate('/cars')}
               className="bg-white text-blue-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-xl"
             >
               {t('searchCars')}
@@ -162,7 +164,7 @@ const HomePage = ({ language, setCurrentPage, setSelectedCar, currency }) => {
                   <button
                     onClick={() => {
                       setSelectedCar(car);
-                      setCurrentPage('booking');
+                      navigate('/booking');
                     }}
                     className="w-full bg-gradient-to-r from-blue-900 to-slate-600 text-white py-3 rounded-lg hover:opacity-90 transition-all font-semibold"
                   >
@@ -174,7 +176,7 @@ const HomePage = ({ language, setCurrentPage, setSelectedCar, currency }) => {
           </div>
           <div className="text-center mt-12">
             <button
-              onClick={() => setCurrentPage('cars')}
+              onClick={() => navigate('/cars')}
               className="bg-gradient-to-r from-blue-900 to-slate-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105"
             >
               {language === 'ar' ? 'عرض جميع السيارات' : 'View All Cars'}
@@ -377,7 +379,7 @@ const HomePage = ({ language, setCurrentPage, setSelectedCar, currency }) => {
                 : 'Book your car now and enjoy an unforgettable driving experience'}
             </p>
             <button
-              onClick={() => setCurrentPage('cars')}
+              onClick={() => navigate('/cars')}
               className="bg-white text-blue-900 px-10 py-4 rounded-lg text-lg font-bold hover:bg-gray-100 transition-all transform hover:scale-110 shadow-2xl"
             >
               {t('bookNow')}
