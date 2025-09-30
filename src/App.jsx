@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./index.css";
 import { useTranslation } from "./utils/translations";
 import Header from "./components/Header";
@@ -6,6 +6,7 @@ import HomePage from "./components/HomePage";
 import CarsPage from "./components/CarsPage";
 import BookingPage from "./components/BookingPage";
 import ContactUs from "./components/ContactUs";
+import TermsOfService from "./components/TermsOfService";
 import Footer from "./components/Footer";
 import ChatBot from "./components/ChatBot";
 
@@ -34,6 +35,11 @@ const App = () => {
   });
 
   const t = useTranslation(language);
+
+  // Scroll to top on initial load without smooth scrolling
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Smooth page transition handler
   const handlePageChange = (newPage) => {
@@ -133,6 +139,11 @@ const App = () => {
           )}
           {currentPage === "contact-us" && (
             <ContactUs
+              language={language}
+            />
+          )}
+          {currentPage === "TOS" && (
+            <TermsOfService
               language={language}
             />
           )}
