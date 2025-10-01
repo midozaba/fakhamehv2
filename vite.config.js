@@ -9,6 +9,15 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    // Proxy API requests to backend server
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+        }
+      }
+    },
     // Explicitly expose environment variables to the client (optional, but good for clarity)
     define: {
       // You can expose non-VITE_ prefixed env vars here if needed

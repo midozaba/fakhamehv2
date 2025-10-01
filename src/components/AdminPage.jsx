@@ -1,1082 +1,469 @@
 /*eslint-disable */
-import React, { useState } from "react";
-import carsData from "../data/cars.json";
+import React, { useState, useEffect } from "react";
+import { toast } from 'react-toastify';
+import {
+  getBookings,
+  updateBookingStatus,
+  getContactMessages,
+  updateMessageStatus,
+  getCars,
+  getAdminStats,
+  createCar,
+  updateCar,
+  deleteCar
+} from "../services/adminApi";
 
 const AdminPage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeTab, setActiveTab] = useState("contacts");
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [loading, setLoading] = useState(false);
 
-  // Mock data - will be replaced with real data later
-  const [contactResponses] = useState([
-    {
-      id: 1,
-      name: "أحمد حسن",
-      email: "ahmad@example.com",
-      phone: "+962 77 123 4567",
-      subject: "استفسار عن تأجير السيارات",
-      message: "أنا مهتم بتأجير سيارة فاخرة لمدة أسبوع.",
-      date: "2025-09-28",
-      status: "new"
-    },
-    {
-      id: 2,
-      name: "سارة محمد",
-      email: "sara@example.com",
-      phone: "+962 79 987 6543",
-      subject: "سؤال حول الحجز",
-      message: "هل تقدمون خدمة التوصيل للمطار؟",
-      date: "2025-09-27",
-      status: "read"
-    },
-    {
-      id: 3,
-      name: "عمر علي",
-      email: "omar@example.com",
-      phone: "+962 78 555 1234",
-      subject: "طلب خاص",
-      message: "هل يمكنني استئجار سيارة لحفل زفاف؟",
-      date: "2025-09-26",
-      status: "responded"
-    }
-  ]);
+  // State for dashboard stats
+  const [stats, setStats] = useState(null);
 
-  const [bookings, setBookings] = useState([
-    {
-      id: 1,
-      customerName: "خالد إبراهيم",
-      email: "khaled@example.com",
-      phone: "+962 77 111 2222",
-      carName: "مرسيدس S-Class",
-      pickupDate: "2025-10-05",
-      returnDate: "2025-10-10",
-      days: 5,
-      totalPrice: "350 دينار",
-      status: "pending",
-      insurance: "تأمين شامل",
-      license: "123456789",
-      address: {
-        street: "شارع الملك عبدالله الثاني، مبنى 25",
-        city: "عمان",
-        area: "عبدون",
-        postalCode: "11941",
-        country: "الأردن"
-      },
-      idDocumentUrl: "https://example.com/documents/khaled-id.jpg",
-      passportDocumentUrl: "https://example.com/documents/khaled-passport.jpg"
-    },
-    {
-      id: 2,
-      customerName: "ليلى محمود",
-      email: "layla@example.com",
-      phone: "+962 79 333 4444",
-      carName: "BMW 5 Series",
-      pickupDate: "2025-10-03",
-      returnDate: "2025-10-07",
-      days: 4,
-      totalPrice: "280 دينار",
-      status: "pending",
-      insurance: "تأمين أساسي",
-      license: "987654321",
-      address: {
-        street: "شارع مكة، مجمع الرابية",
-        city: "عمان",
-        area: "الشميساني",
-        postalCode: "11953",
-        country: "الأردن"
-      },
-      idDocumentUrl: "https://example.com/documents/layla-id.jpg",
-      passportDocumentUrl: "https://example.com/documents/layla-passport.jpg"
-    },
-    {
-      id: 3,
-      customerName: "فادي ناصر",
-      email: "fadi@example.com",
-      phone: "+962 78 999 8888",
-      carName: "تويوتا كامري",
-      pickupDate: "2025-09-30",
-      returnDate: "2025-10-02",
-      days: 2,
-      totalPrice: "80 دينار",
-      status: "confirmed",
-      insurance: "تأمين شامل",
-      license: "456789123",
-      address: {
-        street: "شارع الجاردنز، فيلا 12",
-        city: "عمان",
-        area: "الجاردنز",
-        postalCode: "11194",
-        country: "الأردن"
-      },
-      idDocumentUrl: "https://example.com/documents/fadi-id.jpg",
-      passportDocumentUrl: "https://example.com/documents/fadi-passport.jpg"
-    }
-  ]);
+  // State for bookings
+  const [bookings, setBookings] = useState([]);
+  const [bookingsFilter, setBookingsFilter] = useState("all");
 
-  const [reviews, setReviews] = useState([
-    {
-      id: 1,
-      customerName: "Ahmed Mohammed",
-      customerNameAr: "أحمد محمد",
-      rating: 5,
-      comment: "Excellent service and clean cars. Highly recommended!",
-      commentAr: "خدمة ممتازة وسيارات نظيفة. أنصح بشدة!",
-      date: "2025-09-25",
-      isApproved: true
-    },
-    {
-      id: 2,
-      customerName: "Sarah Ali",
-      customerNameAr: "سارة علي",
-      rating: 5,
-      comment: "Reasonable prices and very professional staff",
-      commentAr: "أسعار معقولة وموظفين محترفين جداً",
-      date: "2025-09-24",
-      isApproved: true
-    },
-    {
-      id: 3,
-      customerName: "Khaled Hassan",
-      customerNameAr: "خالد حسن",
-      rating: 5,
-      comment: "Great experience! The car was in excellent condition",
-      commentAr: "تجربة رائعة! السيارة كانت بحالة ممتازة",
-      date: "2025-09-23",
-      isApproved: true
-    }
-  ]);
+  // State for contact messages
+  const [contactMessages, setContactMessages] = useState([]);
+  const [messagesFilter, setMessagesFilter] = useState("all");
 
-  const [newReview, setNewReview] = useState({
-    customerName: "",
-    customerNameAr: "",
-    rating: 5,
-    comment: "",
-    commentAr: ""
-  });
-
-  const [cars, setCars] = useState(carsData);
-  const [newCar, setNewCar] = useState({
-    car_barnd: "",
-    CAR_TYPE: "",
-    CAR_MODEL: new Date().getFullYear(),
-    CAR_NUM: "",
-    PRICEPERDAY: "",
-    priceperweek: "",
-    pricepermonth: "",
-    car_color: "",
-    MILEAGE: "",
-    status: "available",
-    image: ""
-  });
+  // State for cars
+  const [cars, setCars] = useState([]);
+  const [showCarForm, setShowCarForm] = useState(false);
   const [editingCar, setEditingCar] = useState(null);
+  const [carFormData, setCarFormData] = useState({
+    car_barnd: '',
+    car_type: '',
+    car_model: new Date().getFullYear(),
+    car_num: '',
+    price_per_day: '',
+    price_per_week: '',
+    price_per_month: '',
+    car_color: '',
+    mileage: '',
+    status: 'available',
+    image_url: ''
+  });
+
+  // State for viewing documents
   const [viewingDocuments, setViewingDocuments] = useState(null);
+
+  // Fetch dashboard stats
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const response = await getAdminStats();
+      if (response.success) {
+        setStats(response.stats);
+      }
+    } catch (error) {
+      toast.error('Failed to load statistics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch bookings
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const filters = bookingsFilter !== "all" ? { status: bookingsFilter } : {};
+      const response = await getBookings(filters);
+      if (response.success) {
+        setBookings(response.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load bookings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch contact messages
+  const fetchMessages = async () => {
+    try {
+      setLoading(true);
+      const filters = messagesFilter !== "all" ? { status: messagesFilter } : {};
+      const response = await getContactMessages(filters);
+      if (response.success) {
+        setContactMessages(response.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load messages');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch cars
+  const fetchCars = async () => {
+    try {
+      setLoading(true);
+      const response = await getCars();
+      if (response.success) {
+        setCars(response.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load cars');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load data when tab changes
+  useEffect(() => {
+    if (isLoggedIn) {
+      if (activeTab === "dashboard") {
+        fetchStats();
+      } else if (activeTab === "bookings") {
+        fetchBookings();
+      } else if (activeTab === "contacts") {
+        fetchMessages();
+      } else if (activeTab === "cars") {
+        fetchCars();
+      }
+    }
+  }, [activeTab, isLoggedIn, bookingsFilter, messagesFilter]);
+
+  // Handle booking status update
+  const handleBookingStatusUpdate = async (bookingId, newStatus) => {
+    try {
+      const response = await updateBookingStatus(bookingId, newStatus);
+      if (response.success) {
+        toast.success('Booking status updated successfully');
+        fetchBookings(); // Refresh bookings
+      }
+    } catch (error) {
+      toast.error('Failed to update booking status');
+    }
+  };
+
+  // Handle message status update
+  const handleMessageStatusUpdate = async (messageId, newStatus) => {
+    try {
+      const response = await updateMessageStatus(messageId, newStatus);
+      if (response.success) {
+        toast.success('Message status updated');
+        fetchMessages(); // Refresh messages
+      }
+    } catch (error) {
+      toast.error('Failed to update message status');
+    }
+  };
 
   const handleLogin = (e) => {
     e.preventDefault();
     // TODO: Implement actual authentication
     setIsLoggedIn(true);
+    toast.success('Logged in successfully');
   };
 
-  const handleBookingApproval = (bookingId, approved) => {
-    setBookings(bookings.map(booking =>
-      booking.id === bookingId
-        ? { ...booking, status: approved ? "confirmed" : "rejected" }
-        : booking
-    ));
-  };
-
-  const handleAddReview = (e) => {
-    e.preventDefault();
-    const review = {
-      id: reviews.length + 1,
-      ...newReview,
-      date: new Date().toISOString().split('T')[0],
-      isApproved: true
-    };
-    setReviews([review, ...reviews]);
-    setNewReview({
-      customerName: "",
-      customerNameAr: "",
-      rating: 5,
-      comment: "",
-      commentAr: ""
+  // Handle car form open for adding new car
+  const handleAddCarClick = () => {
+    setEditingCar(null);
+    setCarFormData({
+      car_barnd: '',
+      car_type: '',
+      car_model: new Date().getFullYear(),
+      car_num: '',
+      price_per_day: '',
+      price_per_week: '',
+      price_per_month: '',
+      car_color: '',
+      mileage: '',
+      status: 'available',
+      image_url: ''
     });
+    setShowCarForm(true);
   };
 
-  const handleDeleteReview = (reviewId) => {
-    if (window.confirm("هل أنت متأكد من حذف هذا التقييم؟")) {
-      setReviews(reviews.filter(review => review.id !== reviewId));
-    }
-  };
-
-  const handleAddCar = (e) => {
-    e.preventDefault();
-    const car = {
-      car_id: cars.length + 1,
-      ...newCar,
-      PRICEPERDAY: parseFloat(newCar.PRICEPERDAY),
-      priceperweek: parseFloat(newCar.priceperweek),
-      pricepermonth: parseFloat(newCar.pricepermonth),
-      CAR_MODEL: parseInt(newCar.CAR_MODEL),
-      CAR_NUM: parseInt(newCar.CAR_NUM),
-      MILEAGE: newCar.MILEAGE ? parseInt(newCar.MILEAGE) : null,
-      category_id: null,
-      car_brand: null
-    };
-    setCars([...cars, car]);
-    setNewCar({
-      car_barnd: "",
-      CAR_TYPE: "",
-      CAR_MODEL: new Date().getFullYear(),
-      CAR_NUM: "",
-      PRICEPERDAY: "",
-      priceperweek: "",
-      pricepermonth: "",
-      car_color: "",
-      MILEAGE: "",
-      status: "available",
-      image: ""
-    });
-    // TODO: Send to backend API
-    console.log("New car added:", car);
-  };
-
-  const handleEditCar = (car) => {
+  // Handle car form open for editing
+  const handleEditCarClick = (car) => {
     setEditingCar(car);
-    setNewCar({
+    setCarFormData({
       car_barnd: car.car_barnd,
-      CAR_TYPE: car.CAR_TYPE,
-      CAR_MODEL: car.CAR_MODEL,
-      CAR_NUM: car.CAR_NUM,
-      PRICEPERDAY: car.PRICEPERDAY,
-      priceperweek: car.priceperweek,
-      pricepermonth: car.pricepermonth,
+      car_type: car.car_type,
+      car_model: car.car_model,
+      car_num: car.car_num,
+      price_per_day: car.price_per_day,
+      price_per_week: car.price_per_week,
+      price_per_month: car.price_per_month,
       car_color: car.car_color,
-      MILEAGE: car.MILEAGE || "",
+      mileage: car.mileage || '',
       status: car.status,
-      image: car.image || ""
+      image_url: car.image_url || ''
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setShowCarForm(true);
   };
 
-  const handleUpdateCar = (e) => {
+  // Handle car form input changes
+  const handleCarFormChange = (e) => {
+    const { name, value } = e.target;
+    setCarFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle car form submit
+  const handleCarFormSubmit = async (e) => {
     e.preventDefault();
-    const updatedCar = {
-      ...editingCar,
-      ...newCar,
-      PRICEPERDAY: parseFloat(newCar.PRICEPERDAY),
-      priceperweek: parseFloat(newCar.priceperweek),
-      pricepermonth: parseFloat(newCar.pricepermonth),
-      CAR_MODEL: parseInt(newCar.CAR_MODEL),
-      CAR_NUM: parseInt(newCar.CAR_NUM),
-      MILEAGE: newCar.MILEAGE ? parseInt(newCar.MILEAGE) : null
-    };
-    setCars(cars.map(car => car.car_id === editingCar.car_id ? updatedCar : car));
-    setEditingCar(null);
-    setNewCar({
-      car_barnd: "",
-      CAR_TYPE: "",
-      CAR_MODEL: new Date().getFullYear(),
-      CAR_NUM: "",
-      PRICEPERDAY: "",
-      priceperweek: "",
-      pricepermonth: "",
-      car_color: "",
-      MILEAGE: "",
-      status: "available",
-      image: ""
-    });
-    // TODO: Send to backend API
-    console.log("Car updated:", updatedCar);
-  };
 
-  const handleDeleteCar = (carId) => {
-    if (window.confirm("هل أنت متأكد من حذف هذه السيارة؟")) {
-      setCars(cars.filter(car => car.car_id !== carId));
-      // TODO: Send to backend API
-      console.log("Car deleted:", carId);
+    try {
+      if (editingCar) {
+        // Update existing car
+        const response = await updateCar(editingCar.car_id, carFormData);
+        if (response.success) {
+          toast.success('Car updated successfully');
+          setShowCarForm(false);
+          fetchCars();
+        }
+      } else {
+        // Create new car
+        const response = await createCar(carFormData);
+        if (response.success) {
+          toast.success('Car created successfully');
+          setShowCarForm(false);
+          fetchCars();
+        }
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to save car');
     }
   };
 
-  const handleCancelEdit = () => {
-    setEditingCar(null);
-    setNewCar({
-      car_barnd: "",
-      CAR_TYPE: "",
-      CAR_MODEL: new Date().getFullYear(),
-      CAR_NUM: "",
-      PRICEPERDAY: "",
-      priceperweek: "",
-      pricepermonth: "",
-      car_color: "",
-      MILEAGE: "",
-      status: "available",
-      image: ""
+  // Handle car delete
+  const handleDeleteCar = async (carId) => {
+    if (!window.confirm('Are you sure you want to delete this car?')) {
+      return;
+    }
+
+    try {
+      const response = await deleteCar(carId);
+      if (response.success) {
+        toast.success('Car deleted successfully');
+        fetchCars();
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete car');
+    }
+  };
+
+  // Format date
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
 
+  // Format currency
+  const formatCurrency = (amount) => {
+    return `${parseFloat(amount).toFixed(2)} JOD`;
+  };
+
+  // Get status badge color
   const getStatusColor = (status) => {
-    const colors = {
-      new: "bg-blue-100 text-blue-800",
-      read: "bg-yellow-100 text-yellow-800",
-      responded: "bg-green-100 text-green-800",
-      confirmed: "bg-green-100 text-green-800",
-      pending: "bg-yellow-100 text-yellow-800",
-      completed: "bg-gray-100 text-gray-800",
-      rejected: "bg-red-100 text-red-800",
-      cancelled: "bg-red-100 text-red-800",
-      available: "bg-green-100 text-green-800",
-      rented: "bg-blue-100 text-blue-800",
-      maintenance: "bg-orange-100 text-orange-800"
-    };
-    return colors[status] || "bg-gray-100 text-gray-800";
+    switch (status) {
+      case 'pending':
+      case 'new':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'confirmed':
+      case 'read':
+        return 'bg-blue-100 text-blue-800';
+      case 'in_progress':
+        return 'bg-purple-100 text-purple-800';
+      case 'completed':
+      case 'replied':
+        return 'bg-green-100 text-green-800';
+      case 'cancelled':
+      case 'archived':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const getStatusText = (status) => {
-    const statusTexts = {
-      new: "جديد",
-      read: "مقروء",
-      responded: "تم الرد",
-      confirmed: "مؤكد",
-      pending: "قيد الانتظار",
-      completed: "مكتمل",
-      rejected: "مرفوض",
-      cancelled: "ملغي",
-      available: "متاح",
-      rented: "مؤجر",
-      maintenance: "تحت الصيانة"
-    };
-    return statusTexts[status] || status;
-  };
-
-  // Login Screen
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center px-4 py-12" dir="rtl">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-2xl shadow-2xl p-8">
-            <div className="text-center mb-8">
-              <div className="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">تسجيل دخول الإدارة</h1>
-              <p className="text-gray-600">أدخل بيانات الاعتماد الخاصة بك للوصول إلى لوحة التحكم</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 to-slate-700 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+          <h2 className="text-3xl font-bold text-center text-blue-900 mb-8">Admin Login</h2>
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+              <input
+                type="text"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter username"
+                required
+              />
             </div>
-
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  اسم المستخدم
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="admin"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  كلمة المرور
-                </label>
-                <input
-                  type="password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="أدخل كلمة المرور"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="flex items-center">
-                  <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500" />
-                  <span className="mr-2 text-sm text-gray-600">تذكرني</span>
-                </label>
-                <a href="#" className="text-sm text-blue-600 hover:text-blue-700">
-                  نسيت كلمة المرور؟
-                </a>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-3 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-900 transition-all duration-300 transform hover:scale-105 active:scale-95"
-              >
-                تسجيل الدخول
-              </button>
-            </form>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <input
+                type="password"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter password"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-blue-900 to-slate-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105"
+            >
+              Login
+            </button>
+          </form>
         </div>
       </div>
     );
   }
 
-  // Admin Dashboard
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-md">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-blue-900">لوحة تحكم الإدارة</h1>
-            <button
-              onClick={() => setIsLoggedIn(false)}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              تسجيل الخروج
-            </button>
-          </div>
+      <div className="bg-gradient-to-r from-blue-900 to-slate-600 text-white p-6 shadow-lg">
+        <div className="container mx-auto flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <button
+            onClick={() => setIsLoggedIn(false)}
+            className="bg-white text-blue-900 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-all"
+          >
+            Logout
+          </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">إجمالي الرسائل</p>
-                <p className="text-3xl font-bold text-blue-900">{contactResponses.length}</p>
-              </div>
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">إجمالي الحجوزات</p>
-                <p className="text-3xl font-bold text-blue-900">{bookings.length}</p>
-              </div>
-              <div className="bg-green-100 p-3 rounded-lg">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">قيد الموافقة</p>
-                <p className="text-3xl font-bold text-yellow-600">
-                  {bookings.filter(b => b.status === "pending").length}
-                </p>
-              </div>
-              <div className="bg-yellow-100 p-3 rounded-lg">
-                <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">السيارات المتاحة</p>
-                <p className="text-3xl font-bold text-purple-600">
-                  {cars.filter(c => c.status === "available").length}
-                </p>
-              </div>
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">إجمالي الأسطول</p>
-                <p className="text-3xl font-bold text-indigo-600">{cars.length}</p>
-              </div>
-              <div className="bg-indigo-100 p-3 rounded-lg">
-                <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">تقييمات العملاء</p>
-                <p className="text-3xl font-bold text-pink-600">{reviews.length}</p>
-              </div>
-              <div className="bg-pink-100 p-3 rounded-lg">
-                <svg className="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
+      <div className="container mx-auto p-6">
         {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
+        <div className="bg-white rounded-xl shadow-lg mb-6 overflow-hidden">
+          <div className="flex border-b">
+            {[
+              { id: 'dashboard', name: 'Dashboard', icon: '📊' },
+              { id: 'bookings', name: 'Bookings', icon: '🚗' },
+              { id: 'contacts', name: 'Messages', icon: '✉️' },
+              { id: 'cars', name: 'Cars', icon: '🔧' }
+            ].map(tab => (
               <button
-                onClick={() => setActiveTab("contacts")}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === "contacts"
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 px-6 py-4 font-semibold transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-blue-900 text-white'
+                    : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
-                رسائل التواصل
+                <span className="mr-2">{tab.icon}</span>
+                {tab.name}
               </button>
-              <button
-                onClick={() => setActiveTab("bookings")}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === "bookings"
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
-                }`}
-              >
-                الحجوزات
-              </button>
-              <button
-                onClick={() => setActiveTab("reviews")}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === "reviews"
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
-                }`}
-              >
-                تقييمات العملاء
-              </button>
-              <button
-                onClick={() => setActiveTab("cars")}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === "cars"
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
-                }`}
-              >
-                إدارة السيارات
-              </button>
-            </nav>
+            ))}
           </div>
+        </div>
 
-          <div className="p-6">
-            {/* Contact Responses Tab */}
-            {activeTab === "contacts" && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">رسائل نموذج التواصل</h2>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الاسم</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">البريد الإلكتروني</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الهاتف</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الموضوع</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الرسالة</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {contactResponses.map((contact) => (
-                        <tr key={contact.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{contact.name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{contact.email}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{contact.phone}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{contact.subject}</td>
-                          <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{contact.message}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{contact.date}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(contact.status)}`}>
-                              {getStatusText(contact.status)}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+        {/* Dashboard Tab */}
+        {activeTab === "dashboard" && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Dashboard Overview</h2>
+
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+                <p className="mt-4 text-gray-600">Loading statistics...</p>
               </div>
-            )}
-
-            {/* Bookings Tab */}
-            {activeTab === "bookings" && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">حجوزات العملاء</h2>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العميل</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التواصل</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">السيارة</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاريخ الاستلام</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاريخ الإرجاع</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الأيام</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التأمين</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجمالي</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الوثائق</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {bookings.map((booking) => (
-                        <tr key={booking.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{booking.customerName}</div>
-                            <div className="text-xs text-gray-500" dir="ltr">رخصة: {booking.license}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-600" dir="ltr">{booking.email}</div>
-                            <div className="text-xs text-gray-500" dir="ltr">{booking.phone}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{booking.carName}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{booking.pickupDate}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{booking.returnDate}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{booking.days}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{booking.insurance}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{booking.totalPrice}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <button
-                              onClick={() => setViewingDocuments(booking)}
-                              className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors flex items-center gap-1"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                              عرض
-                            </button>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                              {getStatusText(booking.status)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {booking.status === "pending" && (
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleBookingApproval(booking.id, true)}
-                                  className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                                >
-                                  قبول
-                                </button>
-                                <button
-                                  onClick={() => handleBookingApproval(booking.id, false)}
-                                  className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                                >
-                                  رفض
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* Reviews Tab */}
-            {activeTab === "reviews" && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900">إدارة تقييمات العملاء</h2>
-                </div>
-
-                {/* Add New Review Form */}
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">إضافة تقييم جديد</h3>
-                  <form onSubmit={handleAddReview} className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4">
+            ) : stats ? (
+              <div>
+                {/* Statistics Cards */}
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                  <div className="bg-white p-6 rounded-xl shadow-lg">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          اسم العميل (بالإنجليزية)
-                        </label>
-                        <input
-                          type="text"
-                          value={newReview.customerName}
-                          onChange={(e) => setNewReview({...newReview, customerName: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="John Doe"
-                          required
-                        />
+                        <p className="text-gray-600 text-sm">Total Bookings</p>
+                        <p className="text-3xl font-bold text-blue-900">{stats.bookings.total}</p>
                       </div>
+                      <div className="text-4xl">🚗</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl shadow-lg">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          اسم العميل (بالعربية)
-                        </label>
-                        <input
-                          type="text"
-                          value={newReview.customerNameAr}
-                          onChange={(e) => setNewReview({...newReview, customerNameAr: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="أحمد محمد"
-                          required
-                        />
+                        <p className="text-gray-600 text-sm">Pending</p>
+                        <p className="text-3xl font-bold text-yellow-600">{stats.bookings.pending}</p>
                       </div>
+                      <div className="text-4xl">⏳</div>
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        التقييم
-                      </label>
-                      <select
-                        value={newReview.rating}
-                        onChange={(e) => setNewReview({...newReview, rating: parseInt(e.target.value)})}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value={5}>5 نجوم - ممتاز</option>
-                        <option value={4}>4 نجوم - جيد جداً</option>
-                        <option value={3}>3 نجوم - جيد</option>
-                        <option value={2}>نجمتان - مقبول</option>
-                        <option value={1}>نجمة واحدة - ضعيف</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        التعليق (بالإنجليزية)
-                      </label>
-                      <textarea
-                        value={newReview.comment}
-                        onChange={(e) => setNewReview({...newReview, comment: e.target.value})}
-                        rows="3"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                        placeholder="Excellent service and clean cars..."
-                        required
-                      ></textarea>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        التعليق (بالعربية)
-                      </label>
-                      <textarea
-                        value={newReview.commentAr}
-                        onChange={(e) => setNewReview({...newReview, commentAr: e.target.value})}
-                        rows="3"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                        placeholder="خدمة ممتازة وسيارات نظيفة..."
-                        required
-                      ></textarea>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      إضافة التقييم
-                    </button>
-                  </form>
-                </div>
-
-                {/* Reviews List */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">جميع التقييمات ({reviews.length})</h3>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {reviews.map((review) => (
-                      <div key={review.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-1">
-                            {[...Array(5)].map((_, i) => (
-                              <svg
-                                key={i}
-                                className={`w-5 h-5 ${i < review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                              </svg>
-                            ))}
-                          </div>
-                          <button
-                            onClick={() => handleDeleteReview(review.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                        <div className="mb-2">
-                          <p className="font-semibold text-gray-900">{review.customerNameAr}</p>
-                          <p className="text-sm text-gray-600">{review.customerName}</p>
-                        </div>
-                        <p className="text-sm text-gray-700 mb-2 italic">"{review.commentAr}"</p>
-                        <p className="text-sm text-gray-700 mb-2 italic" dir="ltr">"{review.comment}"</p>
-                        <p className="text-xs text-gray-500">{review.date}</p>
+                  <div className="bg-white p-6 rounded-xl shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-600 text-sm">Total Revenue</p>
+                        <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.revenue.total)}</p>
                       </div>
-                    ))}
+                      <div className="text-4xl">💰</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-600 text-sm">Available Cars</p>
+                        <p className="text-3xl font-bold text-blue-600">{stats.cars.available}/{stats.cars.total}</p>
+                      </div>
+                      <div className="text-4xl">🔧</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-600 text-sm">New Messages</p>
+                        <p className="text-3xl font-bold text-purple-600">{stats.messages.new}</p>
+                      </div>
+                      <div className="text-4xl">✉️</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-600 text-sm">Confirmed</p>
+                        <p className="text-3xl font-bold text-green-600">{stats.bookings.confirmed}</p>
+                      </div>
+                      <div className="text-4xl">✅</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* Cars Management Tab */}
-            {activeTab === "cars" && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900">إدارة أسطول السيارات</h2>
-                </div>
-
-                {/* Add/Edit Car Form */}
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {editingCar ? "تعديل السيارة" : "إضافة سيارة جديدة"}
-                  </h3>
-                  <form onSubmit={editingCar ? handleUpdateCar : handleAddCar} className="space-y-4">
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          الماركة *
-                        </label>
-                        <input
-                          type="text"
-                          value={newCar.car_barnd}
-                          onChange={(e) => setNewCar({...newCar, car_barnd: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Toyota, BMW, etc."
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          الموديل / النوع *
-                        </label>
-                        <input
-                          type="text"
-                          value={newCar.CAR_TYPE}
-                          onChange={(e) => setNewCar({...newCar, CAR_TYPE: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Camry, X5, etc."
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          السنة *
-                        </label>
-                        <input
-                          type="number"
-                          value={newCar.CAR_MODEL}
-                          onChange={(e) => setNewCar({...newCar, CAR_MODEL: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="2024"
-                          min="1990"
-                          max={new Date().getFullYear() + 1}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          رقم السيارة *
-                        </label>
-                        <input
-                          type="number"
-                          value={newCar.CAR_NUM}
-                          onChange={(e) => setNewCar({...newCar, CAR_NUM: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="12345"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          اللون *
-                        </label>
-                        <input
-                          type="text"
-                          value={newCar.car_color}
-                          onChange={(e) => setNewCar({...newCar, car_color: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="أبيض، أسود، إلخ"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          الكيلومترات
-                        </label>
-                        <input
-                          type="number"
-                          value={newCar.MILEAGE}
-                          onChange={(e) => setNewCar({...newCar, MILEAGE: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="50000"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          السعر لليوم (دينار) *
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={newCar.PRICEPERDAY}
-                          onChange={(e) => setNewCar({...newCar, PRICEPERDAY: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="30.00"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          السعر للأسبوع (دينار) *
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={newCar.priceperweek}
-                          onChange={(e) => setNewCar({...newCar, priceperweek: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="28.00"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          السعر للشهر (دينار) *
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={newCar.pricepermonth}
-                          onChange={(e) => setNewCar({...newCar, pricepermonth: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="25.00"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          الحالة *
-                        </label>
-                        <select
-                          value={newCar.status}
-                          onChange={(e) => setNewCar({...newCar, status: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                          <option value="available">متاح</option>
-                          <option value="rented">مؤجر</option>
-                          <option value="maintenance">تحت الصيانة</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          رابط الصورة
-                        </label>
-                        <input
-                          type="text"
-                          value={newCar.image}
-                          onChange={(e) => setNewCar({...newCar, image: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="https://example.com/car.jpg (سنضيف خاصية الرفع لاحقاً)"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button
-                        type="submit"
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        {editingCar ? "تحديث السيارة" : "إضافة السيارة"}
-                      </button>
-                      {editingCar && (
-                        <button
-                          type="button"
-                          onClick={handleCancelEdit}
-                          className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                        >
-                          إلغاء
-                        </button>
-                      )}
-                    </div>
-                  </form>
-                </div>
-
-                {/* Cars List */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">جميع السيارات ({cars.length})</h3>
+                {/* Recent Bookings */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h3 className="text-xl font-bold mb-4">Recent Bookings</h3>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
+                    <table className="w-full">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الرقم</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الماركة والموديل</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">السنة</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">رقم السيارة</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">اللون</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">سعر اليوم</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">سعر الأسبوع</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">سعر الشهر</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Car</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pickup Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {cars.map((car) => (
-                          <tr key={car.car_id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">#{car.car_id}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{car.car_barnd}</div>
-                              <div className="text-xs text-gray-500">{car.CAR_TYPE}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{car.CAR_MODEL}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{car.CAR_NUM}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{car.car_color}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{car.PRICEPERDAY} دينار</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{car.priceperweek} دينار</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{car.pricepermonth} دينار</td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(car.status)}`}>
-                                {getStatusText(car.status)}
+                      <tbody className="divide-y divide-gray-200">
+                        {stats.recentBookings && stats.recentBookings.map((booking) => (
+                          <tr key={booking.booking_id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm">{booking.customer_name}</td>
+                            <td className="px-4 py-3 text-sm">{booking.car_brand} {booking.car_type}</td>
+                            <td className="px-4 py-3 text-sm">{formatDate(booking.pickup_date)}</td>
+                            <td className="px-4 py-3 text-sm font-semibold">{formatCurrency(booking.total_price)}</td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(booking.status)}`}>
+                                {booking.status}
                               </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleEditCar(car)}
-                                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                >
-                                  تعديل
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteCar(car.car_id)}
-                                  className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                                >
-                                  حذف
-                                </button>
-                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1085,160 +472,588 @@ const AdminPage = () => {
                   </div>
                 </div>
               </div>
+            ) : (
+              <div className="text-center py-12 text-gray-600">No data available</div>
             )}
           </div>
-        </div>
+        )}
+
+        {/* Bookings Tab */}
+        {activeTab === "bookings" && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Bookings Management</h2>
+              <select
+                value={bookingsFilter}
+                onChange={(e) => setBookingsFilter(e.target.value)}
+                className="px-4 py-2 border rounded-lg"
+              >
+                <option value="all">All Bookings</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+                <p className="mt-4 text-gray-600">Loading bookings...</p>
+              </div>
+            ) : (
+              <div className="grid gap-6">
+                {bookings.map((booking) => (
+                  <div key={booking.booking_id} className="bg-white rounded-xl shadow-lg p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-blue-900">{booking.customer_name}</h3>
+                        <p className="text-gray-600">{booking.customer_email}</p>
+                        <p className="text-gray-600">{booking.customer_phone}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(booking.status)}`}>
+                          {booking.status}
+                        </span>
+                        <p className="text-sm text-gray-500 mt-2">
+                          Booked: {formatDate(booking.created_at)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h4 className="font-semibold text-gray-700 mb-2">🚗 Car Details</h4>
+                        <p><strong>Car:</strong> {booking.car_brand} {booking.car_type} ({booking.car_model})</p>
+                        <p><strong>Color:</strong> {booking.car_color}</p>
+                      </div>
+
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h4 className="font-semibold text-gray-700 mb-2">📅 Rental Period</h4>
+                        <p><strong>Pickup:</strong> {formatDate(booking.pickup_date)}</p>
+                        <p><strong>Return:</strong> {formatDate(booking.return_date)}</p>
+                        <p><strong>Duration:</strong> {booking.days} days</p>
+                      </div>
+
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h4 className="font-semibold text-gray-700 mb-2">📍 Address</h4>
+                        <p>{booking.street}</p>
+                        <p>{booking.city}, {booking.area || ''}</p>
+                        <p>{booking.country} {booking.postal_code || ''}</p>
+                      </div>
+
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h4 className="font-semibold text-gray-700 mb-2">💰 Pricing</h4>
+                        <p><strong>Base Price:</strong> {formatCurrency(booking.base_price)}</p>
+                        <p><strong>Insurance:</strong> {formatCurrency(booking.insurance_price)}</p>
+                        <p><strong>Services:</strong> {formatCurrency(booking.services_price)}</p>
+                        <p className="text-lg font-bold text-blue-900 mt-2">
+                          <strong>Total:</strong> {formatCurrency(booking.total_price)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                      <h4 className="font-semibold text-gray-700 mb-2">📋 Additional Info</h4>
+                      <p><strong>Insurance Type:</strong> {booking.insurance_type}</p>
+                      <p><strong>License:</strong> {booking.customer_license}</p>
+                      {booking.additional_services && booking.additional_services.length > 0 && (
+                        <p><strong>Services:</strong> {booking.additional_services.join(', ')}</p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setViewingDocuments(booking)}
+                        className="px-4 py-2 bg-blue-100 text-blue-900 rounded-lg hover:bg-blue-200 transition-all"
+                      >
+                        View Documents
+                      </button>
+
+                      {booking.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => handleBookingStatusUpdate(booking.booking_id, 'confirmed')}
+                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => handleBookingStatusUpdate(booking.booking_id, 'cancelled')}
+                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+
+                      {booking.status === 'confirmed' && (
+                        <button
+                          onClick={() => handleBookingStatusUpdate(booking.booking_id, 'in_progress')}
+                          className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all"
+                        >
+                          Start Rental
+                        </button>
+                      )}
+
+                      {booking.status === 'in_progress' && (
+                        <button
+                          onClick={() => handleBookingStatusUpdate(booking.booking_id, 'completed')}
+                          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+                        >
+                          Complete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {bookings.length === 0 && (
+                  <div className="text-center py-12 bg-white rounded-xl shadow-lg">
+                    <p className="text-gray-600">No bookings found</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Contact Messages Tab */}
+        {activeTab === "contacts" && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Contact Messages</h2>
+              <select
+                value={messagesFilter}
+                onChange={(e) => setMessagesFilter(e.target.value)}
+                className="px-4 py-2 border rounded-lg"
+              >
+                <option value="all">All Messages</option>
+                <option value="new">New</option>
+                <option value="read">Read</option>
+                <option value="replied">Replied</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+                <p className="mt-4 text-gray-600">Loading messages...</p>
+              </div>
+            ) : (
+              <div className="grid gap-6">
+                {contactMessages.map((message) => (
+                  <div key={message.message_id} className="bg-white rounded-xl shadow-lg p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-blue-900">{message.name}</h3>
+                        <p className="text-gray-600">{message.email}</p>
+                        {message.phone && <p className="text-gray-600">{message.phone}</p>}
+                      </div>
+                      <div className="text-right">
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(message.status)}`}>
+                          {message.status}
+                        </span>
+                        <p className="text-sm text-gray-500 mt-2">
+                          {formatDate(message.created_at)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {message.subject && (
+                      <div className="mb-4">
+                        <p className="font-semibold text-gray-700">Subject:</p>
+                        <p className="text-gray-600">{message.subject}</p>
+                      </div>
+                    )}
+
+                    <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                      <p className="font-semibold text-gray-700 mb-2">Message:</p>
+                      <p className="text-gray-600 whitespace-pre-wrap">{message.message}</p>
+                    </div>
+
+                    <div className="flex gap-3">
+                      {message.status === 'new' && (
+                        <button
+                          onClick={() => handleMessageStatusUpdate(message.message_id, 'read')}
+                          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+                        >
+                          Mark as Read
+                        </button>
+                      )}
+                      {(message.status === 'new' || message.status === 'read') && (
+                        <button
+                          onClick={() => handleMessageStatusUpdate(message.message_id, 'replied')}
+                          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all"
+                        >
+                          Mark as Replied
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleMessageStatusUpdate(message.message_id, 'archived')}
+                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all"
+                      >
+                        Archive
+                      </button>
+                      <a
+                        href={`mailto:${message.email}`}
+                        className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all"
+                      >
+                        Reply via Email
+                      </a>
+                    </div>
+                  </div>
+                ))}
+
+                {contactMessages.length === 0 && (
+                  <div className="text-center py-12 bg-white rounded-xl shadow-lg">
+                    <p className="text-gray-600">No messages found</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Cars Tab */}
+        {activeTab === "cars" && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Car Inventory</h2>
+              <button
+                onClick={handleAddCarClick}
+                className="px-6 py-3 bg-gradient-to-r from-blue-900 to-slate-600 text-white rounded-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105"
+              >
+                + Add New Car
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+                <p className="mt-4 text-gray-600">Loading cars...</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Brand</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Model</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Color</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Car #</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price/Day</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {cars.map((car) => (
+                        <tr key={car.car_id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-medium">{car.car_barnd}</td>
+                          <td className="px-4 py-3 text-sm">{car.car_type}</td>
+                          <td className="px-4 py-3 text-sm">{car.car_model}</td>
+                          <td className="px-4 py-3 text-sm">{car.car_color}</td>
+                          <td className="px-4 py-3 text-sm">{car.car_num}</td>
+                          <td className="px-4 py-3 text-sm font-semibold">{formatCurrency(car.price_per_day)}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              car.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {car.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEditCarClick(car)}
+                                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-all"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCar(car.car_id)}
+                                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-all"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {cars.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600">No cars found</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Document Viewer Modal */}
       {viewingDocuments && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
-          onClick={() => setViewingDocuments(null)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">
-                وثائق العميل - {viewingDocuments.customerName}
-              </h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b flex justify-between items-center">
+              <h3 className="text-2xl font-bold">Customer Documents</h3>
               <button
                 onClick={() => setViewingDocuments(null)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 text-2xl"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                ×
               </button>
             </div>
-
-            <div className="p-6 space-y-6">
-              {/* Customer Info Summary */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">معلومات الحجز</h3>
-                <div className="grid md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">البريد الإلكتروني:</span>
-                    <span className="mr-2 font-medium" dir="ltr">{viewingDocuments.email}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">الهاتف:</span>
-                    <span className="mr-2 font-medium" dir="ltr">{viewingDocuments.phone}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">رقم الرخصة:</span>
-                    <span className="mr-2 font-medium" dir="ltr">{viewingDocuments.license}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">السيارة:</span>
-                    <span className="mr-2 font-medium">{viewingDocuments.carName}</span>
+            <div className="p-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold mb-2">ID Document</h4>
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <p className="text-sm text-gray-600 mb-2">File: {viewingDocuments.id_document_path}</p>
+                    <a
+                      href={`http://localhost:3001/${viewingDocuments.id_document_path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    >
+                      View/Download
+                    </a>
                   </div>
                 </div>
-
-                {/* Address Information */}
-                {viewingDocuments.address && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h4 className="font-semibold text-gray-900 mb-2">العنوان</h4>
-                    <div className="text-sm text-gray-700">
-                      <p>{viewingDocuments.address.street}</p>
-                      <p>
-                        {viewingDocuments.address.area && `${viewingDocuments.address.area}، `}
-                        {viewingDocuments.address.city}
-                        {viewingDocuments.address.postalCode && ` ${viewingDocuments.address.postalCode}`}
-                      </p>
-                      <p>{viewingDocuments.address.country}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* ID Document */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900">الهوية الوطنية / بطاقة الإقامة</h3>
-                  <a
-                    href={viewingDocuments.idDocumentUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    تحميل
-                  </a>
-                </div>
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <img
-                    src={viewingDocuments.idDocumentUrl}
-                    alt="ID Document"
-                    className="w-full h-auto"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                  <div className="hidden w-full h-64 items-center justify-center bg-gray-100 text-gray-500">
-                    <div className="text-center">
-                      <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <p>معاينة الوثيقة غير متوفرة</p>
-                      <p className="text-sm">انقر على تحميل للعرض</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Passport Document */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900">جواز السفر</h3>
-                  <a
-                    href={viewingDocuments.passportDocumentUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    تحميل
-                  </a>
-                </div>
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <img
-                    src={viewingDocuments.passportDocumentUrl}
-                    alt="Passport Document"
-                    className="w-full h-auto"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                  <div className="hidden w-full h-64 items-center justify-center bg-gray-100 text-gray-500">
-                    <div className="text-center">
-                      <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <p>معاينة الوثيقة غير متوفرة</p>
-                      <p className="text-sm">انقر على تحميل للعرض</p>
-                    </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Passport Document</h4>
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <p className="text-sm text-gray-600 mb-2">File: {viewingDocuments.passport_document_path}</p>
+                    <a
+                      href={`http://localhost:3001/${viewingDocuments.passport_document_path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    >
+                      View/Download
+                    </a>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end">
+      {/* Car Add/Edit Modal */}
+      {showCarForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b flex justify-between items-center">
+              <h3 className="text-2xl font-bold">
+                {editingCar ? 'Edit Car' : 'Add New Car'}
+              </h3>
               <button
-                onClick={() => setViewingDocuments(null)}
-                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                onClick={() => setShowCarForm(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
               >
-                إغلاق
+                ×
               </button>
             </div>
+            <form onSubmit={handleCarFormSubmit} className="p-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Brand *
+                  </label>
+                  <input
+                    type="text"
+                    name="car_barnd"
+                    value={carFormData.car_barnd}
+                    onChange={handleCarFormChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Toyota, Honda"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Type *
+                  </label>
+                  <input
+                    type="text"
+                    name="car_type"
+                    value={carFormData.car_type}
+                    onChange={handleCarFormChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Camry, Civic"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Model Year *
+                  </label>
+                  <input
+                    type="number"
+                    name="car_model"
+                    value={carFormData.car_model}
+                    onChange={handleCarFormChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="2024"
+                    min="1900"
+                    max="2050"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Car Number *
+                  </label>
+                  <input
+                    type="number"
+                    name="car_num"
+                    value={carFormData.car_num}
+                    onChange={handleCarFormChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="12345"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Color *
+                  </label>
+                  <input
+                    type="text"
+                    name="car_color"
+                    value={carFormData.car_color}
+                    onChange={handleCarFormChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., White, Black"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mileage
+                  </label>
+                  <input
+                    type="number"
+                    name="mileage"
+                    value={carFormData.mileage}
+                    onChange={handleCarFormChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="50000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Price Per Day (JOD) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="price_per_day"
+                    value={carFormData.price_per_day}
+                    onChange={handleCarFormChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="30.00"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Price Per Week (JOD) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="price_per_week"
+                    value={carFormData.price_per_week}
+                    onChange={handleCarFormChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="180.00"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Price Per Month (JOD) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="price_per_month"
+                    value={carFormData.price_per_month}
+                    onChange={handleCarFormChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="600.00"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status *
+                  </label>
+                  <select
+                    name="status"
+                    value={carFormData.status}
+                    onChange={handleCarFormChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="available">Available</option>
+                    <option value="rented">Rented</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="unavailable">Unavailable</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Image URL (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    name="image_url"
+                    value={carFormData.image_url}
+                    onChange={handleCarFormChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="https://example.com/car-image.jpg"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-900 to-slate-600 text-white rounded-lg font-semibold hover:opacity-90 transition-all"
+                >
+                  {editingCar ? 'Update Car' : 'Add Car'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCarForm(false)}
+                  className="px-6 py-3 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -68,7 +68,7 @@ const ContactUs = ({ language }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.name || !formData.email || !formData.message) {
@@ -76,29 +76,69 @@ const ContactUs = ({ language }) => {
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      alert(language === 'ar' ? 'البريد الإلكتروني غير صالح' : 'Invalid email format');
+      return;
+    }
+
     setIsSubmitting(true);
 
-    // Simulate form submission
-    setTimeout(() => {
-      console.log("Contact form submitted:", formData);
+    try {
+      // Import toast dynamically
+      const { toast } = await import('react-toastify');
 
-      // Scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-
-      // Show modal after a brief delay to allow scroll to complete
-      setTimeout(() => {
-        setShowSuccessModal(true);
-      }, 300);
-
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        subject: "",
-        message: ""
+      // Submit to backend
+      const response = await fetch('http://localhost:3001/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
       });
+
+      if (response.ok) {
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Show modal after a brief delay to allow scroll to complete
+        setTimeout(() => {
+          setShowSuccessModal(true);
+        }, 300);
+
+        // Reset form
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          subject: "",
+          message: ""
+        });
+
+        toast.success(language === 'ar'
+          ? 'تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.'
+          : 'Your message has been sent successfully! We will contact you soon.', {
+          autoClose: 5000
+        });
+      } else {
+        const error = await response.json();
+        toast.error(language === 'ar'
+          ? `فشل إرسال الرسالة: ${error.error || 'خطأ غير معروف'}`
+          : `Failed to send message: ${error.error || 'Unknown error'}`, {
+          autoClose: 5000
+        });
+      }
+    } catch (error) {
+      const { toast } = await import('react-toastify');
+      toast.error(language === 'ar'
+        ? `خطأ في الاتصال: ${error.message}`
+        : `Connection error: ${error.message}`, {
+        autoClose: 5000
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
   return (

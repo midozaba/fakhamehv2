@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import "./index.css";
 import { useTranslation } from "./utils/translations";
 import Header from "./components/Header";
@@ -66,28 +68,149 @@ const AppLayout = () => {
     }, 150);
   };
 
-  const handleBookingSubmit = () => {
-    const { name, email, phone, license } = bookingData.customerInfo;
+  const handleBookingSubmit = async () => {
+    const { name, email, phone, license, street, city, country, idDocument, passportDocument } = bookingData.customerInfo;
+
+    // Validate required fields
     if (
       !name ||
       !email ||
       !phone ||
       !license ||
+      !street ||
+      !city ||
+      !country ||
       !bookingData.pickupDate ||
-      !bookingData.returnDate
+      !bookingData.returnDate ||
+      !bookingData.insurance
     ) {
       alert(t("fillAllFields"));
       return;
     }
 
-    console.log("Booking Data:", {
-      car: selectedCar,
-      booking: bookingData,
-    });
+    // Validate documents
+    if (!idDocument || !passportDocument) {
+      alert(language === 'ar' ? 'يرجى تحميل المستندات المطلوبة' : 'Please upload required documents');
+      return;
+    }
 
-    alert(t("bookingSuccess"));
-    navigate("/");
-    setSelectedCar(null);
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      alert(language === 'ar' ? 'البريد الإلكتروني غير صالح' : 'Invalid email format');
+      return;
+    }
+
+    // Validate dates
+    const pickupDate = new Date(bookingData.pickupDate);
+    const returnDate = new Date(bookingData.returnDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (pickupDate < today) {
+      alert(language === 'ar' ? 'تاريخ الاستلام لا يمكن أن يكون في الماضي' : 'Pickup date cannot be in the past');
+      return;
+    }
+
+    if (returnDate <= pickupDate) {
+      alert(language === 'ar' ? 'تاريخ الإرجاع يجب أن يكون بعد تاريخ الاستلام' : 'Return date must be after pickup date');
+      return;
+    }
+
+    try {
+      // Import toast dynamically
+      const { toast } = await import('react-toastify');
+
+      // Prepare form data
+      const formData = new FormData();
+
+      // Calculate pricing
+      const { calculatePrice } = await import('./utils/carHelpers');
+      const pricing = calculatePrice(selectedCar, bookingData);
+
+      const bookingPayload = {
+        car: selectedCar,
+        pickupDate: bookingData.pickupDate,
+        returnDate: bookingData.returnDate,
+        days: bookingData.days,
+        insurance: bookingData.insurance,
+        additionalServices: bookingData.additionalServices,
+        customerInfo: {
+          name,
+          email,
+          phone,
+          license,
+          street,
+          city,
+          area: bookingData.customerInfo.area || '',
+          postalCode: bookingData.customerInfo.postalCode || '',
+          country
+        },
+        pricing
+      };
+
+      formData.append('bookingData', JSON.stringify(bookingPayload));
+      formData.append('idDocument', idDocument);
+      formData.append('passportDocument', passportDocument);
+
+      // Show loading toast
+      toast.info(language === 'ar' ? 'جاري إرسال الحجز...' : 'Submitting booking...', {
+        autoClose: false,
+        toastId: 'booking-loading'
+      });
+
+      // Submit to backend
+      const response = await fetch('http://localhost:3001/api/bookings', {
+        method: 'POST',
+        body: formData
+      });
+
+      // Close loading toast
+      toast.dismiss('booking-loading');
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(language === 'ar'
+          ? 'تم إرسال الحجز بنجاح! سنتواصل معك قريباً.'
+          : 'Booking submitted successfully! We will contact you shortly.', {
+          autoClose: 5000
+        });
+
+        // Reset and navigate
+        setTimeout(() => {
+          navigate("/");
+          setSelectedCar(null);
+          setBookingData({
+            pickupDate: "",
+            returnDate: "",
+            days: 1,
+            insurance: "",
+            additionalServices: [],
+            customerInfo: {
+              name: "",
+              email: "",
+              phone: "",
+              license: "",
+            },
+          });
+        }, 2000);
+      } else {
+        const error = await response.json();
+        toast.error(language === 'ar'
+          ? `فشل إرسال الحجز: ${error.error || 'خطأ غير معروف'}`
+          : `Failed to submit booking: ${error.error || 'Unknown error'}`, {
+          autoClose: 5000
+        });
+      }
+    } catch (error) {
+      const { toast } = await import('react-toastify');
+      toast.dismiss('booking-loading');
+      toast.error(language === 'ar'
+        ? `خطأ في الاتصال: ${error.message}`
+        : `Connection error: ${error.message}`, {
+        autoClose: 5000
+      });
+    }
   };
 
   return (
@@ -172,6 +295,18 @@ const AppLayout = () => {
 
       <Footer language={language} />
       <ChatBot language={language} />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={language === 'ar'}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </div>
   );
 };

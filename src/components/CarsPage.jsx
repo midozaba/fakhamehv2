@@ -2,13 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../utils/translations';
 import { getCarImage, categorizeCarType } from '../utils/carHelpers';
-import carsData from '../data/cars.json';
+import { fetchCars } from '../services/carsApi';
+import { toast } from 'react-toastify';
 
 const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, currency }) => {
   const navigate = useNavigate();
   const t = useTranslation(language);
   const [visibleCards, setVisibleCards] = useState(new Set());
   const cardRefs = useRef([]);
+  const [cars, setCars] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Conversion rate: 1 JOD = 1.41 USD
   const convertPrice = (priceJOD) => {
@@ -17,15 +20,34 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, c
 
   const currencySymbol = currency === "USD" ? "$" : "JOD";
 
-  const filteredCars = carsData.filter(car => {
+  // Fetch cars from database on component mount
+  useEffect(() => {
+    const loadCars = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchCars();
+        setCars(data);
+      } catch (error) {
+        toast.error('Failed to load cars');
+        console.error('Error loading cars:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCars();
+  }, []);
+
+  const filteredCars = cars.filter(car => {
     if (searchFilters.category !== 'all') {
-      const category = categorizeCarType(car.CAR_TYPE);
+      const category = categorizeCarType(car.car_type);
       if (category !== searchFilters.category) return false;
     }
     if (searchFilters.priceRange !== 'all') {
-      if (searchFilters.priceRange === 'low' && car.PRICEPERDAY > 25) return false;
-      if (searchFilters.priceRange === 'medium' && (car.PRICEPERDAY < 26 || car.PRICEPERDAY > 40)) return false;
-      if (searchFilters.priceRange === 'high' && car.PRICEPERDAY < 41) return false;
+      const pricePerDay = parseFloat(car.price_per_day);
+      if (searchFilters.priceRange === 'low' && pricePerDay > 25) return false;
+      if (searchFilters.priceRange === 'medium' && (pricePerDay < 26 || pricePerDay > 40)) return false;
+      if (searchFilters.priceRange === 'high' && pricePerDay < 41) return false;
     }
     return true;
   });
@@ -76,8 +98,24 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, c
           </h1>
         </div>
 
+<<<<<<< Updated upstream
         {/* Filters Section */}
         <div className={`${language === 'ar' ? 'rtl' : 'ltr'} bg-white p-6 rounded-2xl shadow-xl mb-8`}>
+=======
+<<<<<<< HEAD
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+            <p className="mt-4 text-gray-600">Loading cars...</p>
+          </div>
+        ) : (
+          <>
+            <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
+=======
+        {/* Filters Section */}
+        <div className={`${language === 'ar' ? 'rtl' : 'ltr'} bg-white p-6 rounded-2xl shadow-xl mb-8`}>
+>>>>>>> 52d7a239c978a3a28868d4670cb48755d68ab059
+>>>>>>> Stashed changes
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2 text-blue-800">
@@ -132,8 +170,8 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, c
                 {/* Car Image */}
                 <div className="w-full aspect-[16/9]">
                   <img
-                    src={getCarImage(car.car_barnd, car.CAR_TYPE)}
-                    alt={`${car.car_barnd} ${car.CAR_TYPE}`}
+                    src={getCarImage(car.car_barnd, car.car_type)}
+                    alt={`${car.car_barnd} ${car.car_type}`}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -141,19 +179,19 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, c
                 {/* Hover Overlay with Information */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-3">
                   <h3 className="text-lg font-bold mb-1 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                    {car.car_barnd} {car.CAR_TYPE}
+                    {car.car_barnd} {car.car_type}
                   </h3>
                   <p className="text-gray-200 text-xs mb-2 italic transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
                     {t('orSimilar')}
                   </p>
                   <div className="text-xs text-gray-200 mb-2 space-y-0.5 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-100">
-                    <p>{t('model')}: {car.CAR_MODEL}</p>
+                    <p>{t('model')}: {car.car_model}</p>
                     <p>{t('color')}: {t(car.car_color)}</p>
-                    <p>Category: {t(categorizeCarType(car.CAR_TYPE))}</p>
+                    <p>Category: {t(categorizeCarType(car.car_type))}</p>
                   </div>
                   <div className="mb-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-150">
                     <div className="text-xl font-bold text-white">
-                      {currencySymbol} {convertPrice(car.PRICEPERDAY)} <span className="text-sm text-gray-300">{t('perDay')}</span>
+                      {currencySymbol} {convertPrice(parseFloat(car.price_per_day))} <span className="text-sm text-gray-300">{t('perDay')}</span>
                     </div>
                   </div>
                   <button
@@ -170,6 +208,14 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, c
             );
           })}
         </div>
+
+        {filteredCars.length === 0 && !loading && (
+          <div className="text-center py-12 bg-white rounded-xl shadow-lg">
+            <p className="text-gray-600">No cars found matching your filters</p>
+          </div>
+        )}
+          </>
+        )}
       </div>
     </div>
   );
