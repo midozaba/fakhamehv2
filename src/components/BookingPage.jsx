@@ -174,6 +174,57 @@ const BookingPage = ({
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-xl font-bold mb-4">{t('additionalServices')}</h3>
               <div className="space-y-3">
+                {/* Airport Pickup - Featured Service */}
+                <div className="relative">
+                  <div className="absolute -top-2 -right-2 z-10">
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
+                      <Star className="w-3 h-3 fill-current" />
+                      {language === 'ar' ? 'جديد!' : 'NEW!'}
+                    </span>
+                  </div>
+                  <label className="flex items-start space-x-3 p-4 border-2 border-blue-500 rounded-lg hover:bg-blue-50 cursor-pointer transition-all bg-gradient-to-r from-blue-50 to-indigo-50 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 to-indigo-400/10 animate-shimmer"></div>
+                    <input
+                      type="checkbox"
+                      checked={bookingData.additionalServices.includes('airportPickup')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setBookingData({ ...bookingData, additionalServices: [...bookingData.additionalServices, 'airportPickup'] });
+                        } else {
+                          setBookingData({ ...bookingData, additionalServices: bookingData.additionalServices.filter(s => s !== 'airportPickup') });
+                        }
+                      }}
+                      className="mt-1 relative z-10"
+                    />
+                    <div className="relative z-10 bg-blue-600 p-3 rounded-lg">
+                      <MapPin className="text-white" size={24} />
+                    </div>
+                    <div className="flex-1 relative z-10">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-blue-900">
+                              {language === 'ar' ? 'خدمة التوصيل من المطار' : 'Airport Pickup Service'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {language === 'ar'
+                              ? 'نقوم بتوصيل سيارتك إلى مطار الملكة علياء الدولي'
+                              : 'We deliver your car to Queen Alia International Airport'}
+                          </p>
+                        </div>
+                        <div className="text-right ml-4">
+                          <div className="text-blue-900 font-bold text-lg">{currencySymbol} {convertPrice(25)}</div>
+                          <div className="text-xs text-gray-600 font-medium">
+                            {language === 'ar' ? 'دفعة واحدة' : 'One-time fee'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Regular Services */}
                 {[
                   { id: 'phone', name: t('mobilePhone'), priceJOD: 3, icon: Phone },
                   { id: 'wifi', name: t('wifi'), priceJOD: 2, icon: Wifi },
@@ -205,47 +256,246 @@ const BookingPage = ({
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-xl font-bold mb-4">{t('customerInfo')}</h3>
               <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder={t('fullName')}
-                  value={bookingData.customerInfo.name}
-                  onChange={(e) => setBookingData({
-                    ...bookingData,
-                    customerInfo: { ...bookingData.customerInfo, name: e.target.value }
-                  })}
-                  className="w-full p-3 border rounded-lg"
-                  dir={language === 'ar' ? 'rtl' : 'ltr'}
-                />
-                <input
-                  type="email"
-                  placeholder={t('email')}
-                  value={bookingData.customerInfo.email}
-                  onChange={(e) => setBookingData({
-                    ...bookingData,
-                    customerInfo: { ...bookingData.customerInfo, email: e.target.value }
-                  })}
-                  className="w-full p-3 border rounded-lg"
-                />
-                <input
-                  type="tel"
-                  placeholder={t('phone')}
-                  value={bookingData.customerInfo.phone}
-                  onChange={(e) => setBookingData({
-                    ...bookingData,
-                    customerInfo: { ...bookingData.customerInfo, phone: e.target.value }
-                  })}
-                  className="w-full p-3 border rounded-lg"
-                />
-                <input
-                  type="text"
-                  placeholder={t('licenseNumber')}
-                  value={bookingData.customerInfo.license}
-                  onChange={(e) => setBookingData({
-                    ...bookingData,
-                    customerInfo: { ...bookingData.customerInfo, license: e.target.value }
-                  })}
-                  className="w-full p-3 border rounded-lg"
-                />
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('fullName')} *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={t('fullName')}
+                    value={bookingData.customerInfo.name}
+                    onChange={(e) => setBookingData({
+                      ...bookingData,
+                      customerInfo: { ...bookingData.customerInfo, name: e.target.value }
+                    })}
+                    className="w-full p-3 border rounded-lg"
+                    dir={language === 'ar' ? 'rtl' : 'ltr'}
+                    required
+                  />
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      {t('email')} *
+                    </label>
+                    <input
+                      type="email"
+                      placeholder={t('email')}
+                      value={bookingData.customerInfo.email}
+                      onChange={(e) => setBookingData({
+                        ...bookingData,
+                        customerInfo: { ...bookingData.customerInfo, email: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-lg"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      {t('phone')} *
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder={t('phone')}
+                      value={bookingData.customerInfo.phone}
+                      onChange={(e) => setBookingData({
+                        ...bookingData,
+                        customerInfo: { ...bookingData.customerInfo, phone: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-lg"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('licenseNumber')} *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={t('licenseNumber')}
+                    value={bookingData.customerInfo.license}
+                    onChange={(e) => setBookingData({
+                      ...bookingData,
+                      customerInfo: { ...bookingData.customerInfo, license: e.target.value }
+                    })}
+                    className="w-full p-3 border rounded-lg"
+                    required
+                  />
+                </div>
+
+                {/* Address Information */}
+                <div className="pt-4 border-t border-gray-200">
+                  <h4 className="font-semibold mb-3">
+                    {language === 'ar' ? 'معلومات العنوان *' : 'Address Information *'}
+                  </h4>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        {language === 'ar' ? 'الشارع / العنوان *' : 'Street Address *'}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={language === 'ar' ? 'مثال: شارع الملك حسين، بناية رقم 15' : 'e.g., King Hussein Street, Building 15'}
+                        value={bookingData.customerInfo.street || ''}
+                        onChange={(e) => setBookingData({
+                          ...bookingData,
+                          customerInfo: { ...bookingData.customerInfo, street: e.target.value }
+                        })}
+                        className="w-full p-3 border rounded-lg"
+                        dir={language === 'ar' ? 'rtl' : 'ltr'}
+                        required
+                      />
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          {language === 'ar' ? 'المدينة *' : 'City *'}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={language === 'ar' ? 'عمان' : 'Amman'}
+                          value={bookingData.customerInfo.city || ''}
+                          onChange={(e) => setBookingData({
+                            ...bookingData,
+                            customerInfo: { ...bookingData.customerInfo, city: e.target.value }
+                          })}
+                          className="w-full p-3 border rounded-lg"
+                          dir={language === 'ar' ? 'rtl' : 'ltr'}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          {language === 'ar' ? 'المنطقة / الحي' : 'Area / District'}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={language === 'ar' ? 'عبدون' : 'Abdoun'}
+                          value={bookingData.customerInfo.area || ''}
+                          onChange={(e) => setBookingData({
+                            ...bookingData,
+                            customerInfo: { ...bookingData.customerInfo, area: e.target.value }
+                          })}
+                          className="w-full p-3 border rounded-lg"
+                          dir={language === 'ar' ? 'rtl' : 'ltr'}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          {language === 'ar' ? 'الرمز البريدي' : 'Postal Code'}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="11941"
+                          value={bookingData.customerInfo.postalCode || ''}
+                          onChange={(e) => setBookingData({
+                            ...bookingData,
+                            customerInfo: { ...bookingData.customerInfo, postalCode: e.target.value }
+                          })}
+                          className="w-full p-3 border rounded-lg"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        {language === 'ar' ? 'الدولة *' : 'Country *'}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={language === 'ar' ? 'الأردن' : 'Jordan'}
+                        value={bookingData.customerInfo.country || ''}
+                        onChange={(e) => setBookingData({
+                          ...bookingData,
+                          customerInfo: { ...bookingData.customerInfo, country: e.target.value }
+                        })}
+                        className="w-full p-3 border rounded-lg"
+                        dir={language === 'ar' ? 'rtl' : 'ltr'}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-xl font-bold mb-4">
+                {language === 'ar' ? 'المستندات المطلوبة *' : 'Required Documents *'}
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                {language === 'ar'
+                  ? 'يرجى تحميل صور واضحة لهويتك وجواز سفرك'
+                  : 'Please upload clear photos of your ID and passport'}
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {language === 'ar' ? 'صورة الهوية الوطنية / بطاقة الإقامة *' : 'National ID / Residence Card Photo *'}
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        // Store file reference (will be uploaded to backend later)
+                        setBookingData({
+                          ...bookingData,
+                          customerInfo: {
+                            ...bookingData.customerInfo,
+                            idDocument: file,
+                            idDocumentName: file.name
+                          }
+                        });
+                      }
+                    }}
+                    className="w-full p-3 border rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    required
+                  />
+                  {bookingData.customerInfo?.idDocumentName && (
+                    <p className="text-sm text-green-600 mt-2">
+                      ✓ {bookingData.customerInfo.idDocumentName}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {language === 'ar' ? 'صورة جواز السفر *' : 'Passport Photo *'}
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        // Store file reference (will be uploaded to backend later)
+                        setBookingData({
+                          ...bookingData,
+                          customerInfo: {
+                            ...bookingData.customerInfo,
+                            passportDocument: file,
+                            passportDocumentName: file.name
+                          }
+                        });
+                      }
+                    }}
+                    className="w-full p-3 border rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    required
+                  />
+                  {bookingData.customerInfo?.passportDocumentName && (
+                    <p className="text-sm text-green-600 mt-2">
+                      ✓ {bookingData.customerInfo.passportDocumentName}
+                    </p>
+                  )}
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-xs text-yellow-800">
+                    {language === 'ar'
+                      ? '⚠️ تأكد من أن الصور واضحة وجميع التفاصيل مقروءة. الملفات المقبولة: JPG, PNG, PDF'
+                      : '⚠️ Make sure photos are clear and all details are readable. Accepted files: JPG, PNG, PDF'}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -266,6 +516,19 @@ const BookingPage = ({
                   <div className="flex justify-between">
                     <span>{t('servicesPrice')}:</span>
                     <span>{currencySymbol} {convertPrice(pricing.servicesPrice)}</span>
+                  </div>
+                )}
+                {pricing.airportPickupPrice > 0 && (
+                  <div className="flex justify-between items-center bg-blue-50 -mx-2 px-2 py-2 rounded">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-blue-900">
+                        {language === 'ar' ? 'خدمة التوصيل من المطار' : 'Airport Pickup'}
+                      </span>
+                      <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-semibold">
+                        {language === 'ar' ? 'جديد!' : 'NEW'}
+                      </span>
+                    </div>
+                    <span className="font-semibold text-blue-900">{currencySymbol} {convertPrice(pricing.airportPickupPrice)}</span>
                   </div>
                 )}
                 <div className="border-t pt-2">

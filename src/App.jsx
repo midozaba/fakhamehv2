@@ -9,6 +9,7 @@ import BookingPage from "./components/BookingPage";
 import ContactUs from "./components/ContactUs";
 import TermsOfService from "./components/TermsOfService";
 import AboutUs from "./components/AboutUs";
+import AdminPage from "./components/AdminPage";
 import NotFound from "./components/NotFound";
 import Footer from "./components/Footer";
 import ChatBot from "./components/ChatBot";
@@ -156,6 +157,10 @@ const AppLayout = () => {
             <Route
               path="/about"
               element={<AboutUs language={language} />}
+            />
+            <Route
+              path="/admin"
+              element={<AdminPage language={language} />}
             />
             <Route
               path="*"

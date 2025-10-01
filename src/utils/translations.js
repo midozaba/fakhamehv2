@@ -108,7 +108,7 @@ export const translations = {
     viewOnMaps: 'عرض في خرائط جوجل',
     companyAddress: 'عمان، الأردن - منطقة جبيهة',
     companyPhone: '+962 7 7776 9776',
-    companyEmail: 'info@alfakhama.com',
+    companyEmail: 'info@fakhamarental.com',
     companyHours: 'السبت - الخميس: 10:00 ص - 6:00 م',
     companyName: 'شركة الفخامة لتأجير السيارات',
 
@@ -270,7 +270,7 @@ export const translations = {
     viewOnMaps: 'View on Google Maps',
     companyAddress: 'Amman, Jordan - Jbeiha Area',
     companyPhone: '+962 7 7776 9776',
-    companyEmail: 'TODO: Get the company email', // TODO: Get the company email
+    companyEmail: 'info@fakhamarental.com', 
     companyHours: 'Saturday - Thursday: 10:00 AM - 6:00 PM',
     companyName: 'Al Fakhama Car Rental Company',
 
