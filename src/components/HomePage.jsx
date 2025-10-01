@@ -4,6 +4,7 @@ import { Car, Shield, Clock, Award, Users, MapPin, Phone, Mail, Star, CheckCircl
 import { useTranslation } from '../utils/translations';
 import { getCarImage } from '../utils/carHelpers';
 import carsData from '../data/cars.json';
+import storePic from '../assets/store pic.jpg';
 
 const HomePage = ({ language, setSelectedCar, currency }) => {
   const navigate = useNavigate();
@@ -50,33 +51,36 @@ const HomePage = ({ language, setSelectedCar, currency }) => {
 
   return (
     <div className={language === 'ar' ? 'rtl' : 'ltr'}>
-      <section className="relative bg-gradient-to-br from-blue-900 via-slate-700 to-slate-600 text-white py-20">
-        <div className="absolute inset-0 bg-black opacity-20"></div>
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">{t('heroTitle')}</h1>
-            <p className="text-xl mb-8 opacity-90">{t('heroSubtitle')}</p>
-            <button
-              onClick={() => navigate('/cars')}
-              className="bg-white text-blue-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-xl"
-            >
-              {t('searchCars')}
-            </button>
-          </div>
-        </div>
+      <section className="relative bg-gradient-to-br from-blue-900 via-slate-700 to-slate-600 text-white">
+        <div className="relative h-[500px] md:h-[600px]">
+          <img
+            src={storePic}
+            alt="Al-Fakhama Car Rental Store"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/40"></div>
 
-        <div className="absolute top-20 left-10 opacity-10">
-          <Car size={100} />
-        </div>
-        <div className="absolute bottom-20 right-10 opacity-10">
-          <Shield size={80} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="container mx-auto px-4 relative z-10">
+              <div className="text-center max-w-4xl mx-auto">
+                <h1 className="text-5xl md:text-6xl font-bold mb-6 drop-shadow-2xl">{t('heroTitle')}</h1>
+                <p className="text-xl mb-8 opacity-90 drop-shadow-lg">{t('heroSubtitle')}</p>
+                <button
+                  onClick={() => navigate('/cars')}
+                  className="bg-white text-blue-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-xl"
+                >
+                  {t('searchCars')}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Features Section */}
       <section
         ref={addToRefs}
-        className="py-16 bg-white overflow-hidden"
+        className="py-16 bg-gray-50 overflow-hidden"
       >
         <div className="container mx-auto px-4">
           <div className={`transition-all duration-1000 ${
@@ -121,7 +125,7 @@ const HomePage = ({ language, setSelectedCar, currency }) => {
       {/* Featured Cars Section */}
       <section
         ref={addToRefs}
-        className="py-16 bg-gray-50 overflow-hidden"
+        className="py-16 bg-white overflow-hidden"
       >
         <div className="container mx-auto px-4">
           <div className={`transition-all duration-1000 ${
@@ -220,7 +224,7 @@ const HomePage = ({ language, setSelectedCar, currency }) => {
       {/* Testimonials Section */}
       <section
         ref={addToRefs}
-        className="py-16 bg-white overflow-hidden"
+        className="py-16 bg-gray-50 overflow-hidden"
       >
         <div className="container mx-auto px-4">
           <div className={`transition-all duration-1000 ${
@@ -291,7 +295,7 @@ const HomePage = ({ language, setSelectedCar, currency }) => {
       {/* How It Works Section */}
       <section
         ref={addToRefs}
-        className="py-16 bg-gray-50 overflow-hidden"
+        className="py-16 bg-white overflow-hidden"
       >
         <div className="container mx-auto px-4">
           <div className={`transition-all duration-1000 ${
