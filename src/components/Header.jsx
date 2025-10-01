@@ -102,13 +102,13 @@ const Header = ({ language, setLanguage, currency, setCurrency }) => {
             {/* Desktop Only - Currency and Language Buttons */}
             <button
               onClick={() => setCurrency(currency === "JOD" ? "USD" : "JOD")}
-              className="hidden md:block bg-gradient-to-r from-green-600 to-green-800 text-white px-1.5 py-1 text-xs rounded hover:opacity-90 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+              className="hidden md:block bg-gradient-to-r from-slate-400 to-blue-900 text-white px-2 py-0.5 text-[10px] rounded hover:opacity-90 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
             >
               {currency}
             </button>
             <button
               onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
-              className="hidden md:block bg-gradient-to-r from-slate-400 to-blue-900 text-white px-1.5 py-1 text-xs rounded hover:opacity-90 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+              className="hidden md:block bg-gradient-to-r from-slate-400 to-blue-900 text-white px-2 py-0.5 text-[10px] rounded hover:opacity-90 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
             >
               {language === "ar" ? "English" : "العربية"}
             </button>
@@ -190,7 +190,7 @@ const Header = ({ language, setLanguage, currency, setCurrency }) => {
               <div className="flex gap-2 px-4">
                 <button
                   onClick={() => setCurrency(currency === "JOD" ? "USD" : "JOD")}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-green-800 text-white px-4 py-2 text-sm rounded hover:opacity-90 transition-all duration-300 ease-in-out"
+                  className="flex-1 bg-gradient-to-r from-slate-400 to-blue-900 text-white px-4 py-2 text-sm rounded hover:opacity-90 transition-all duration-300 ease-in-out"
                 >
                   {currency}
                 </button>
