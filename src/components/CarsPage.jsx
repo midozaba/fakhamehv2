@@ -67,20 +67,28 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, c
 
 
   return (
-    <div className={`${language === 'ar' ? 'rtl' : 'ltr'} py-8`}>
-      <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold mb-8 text-gray-800">{t('cars')}</h2>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-12">
+      <div className="container mx-auto px-4 max-w-7xl">
+        {/* Header Section */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-blue-900 mb-4">
+            {t('cars')}
+          </h1>
+        </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
+        {/* Filters Section */}
+        <div className={`${language === 'ar' ? 'rtl' : 'ltr'} bg-white p-6 rounded-2xl shadow-xl mb-8`}>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Category</label>
+              <label className="block text-sm font-medium mb-2 text-blue-800">
+                {language === 'ar' ? 'الفئة' : 'Category'}
+              </label>
               <select
                 value={searchFilters.category}
                 onChange={(e) => setSearchFilters({ ...searchFilters, category: e.target.value })}
-                className="w-full p-3 border rounded-lg"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">All Categories</option>
+                <option value="all">{language === 'ar' ? 'جميع الفئات' : 'All Categories'}</option>
                 <option value="economy">{t('economy')}</option>
                 <option value="sedan">{t('sedan')}</option>
                 <option value="suv">{t('suv')}</option>
@@ -89,29 +97,32 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, c
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Price Range</label>
+              <label className="block text-sm font-medium mb-2 text-blue-800">
+                {language === 'ar' ? 'نطاق السعر' : 'Price Range'}
+              </label>
               <select
                 value={searchFilters.priceRange}
                 onChange={(e) => setSearchFilters({ ...searchFilters, priceRange: e.target.value })}
-                className="w-full p-3 border rounded-lg"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">All Prices</option>
-                <option value="low">JOD 15-25 per day</option>
-                <option value="medium">JOD 26-40 per day</option>
-                <option value="high">JOD 41+ per day</option>
+                <option value="all">{language === 'ar' ? 'جميع الأسعار' : 'All Prices'}</option>
+                <option value="low">JOD 15-25 {language === 'ar' ? 'في اليوم' : 'per day'}</option>
+                <option value="medium">JOD 26-40 {language === 'ar' ? 'في اليوم' : 'per day'}</option>
+                <option value="high">JOD 41+ {language === 'ar' ? 'في اليوم' : 'per day'}</option>
               </select>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-4 gap-y-4 lg:gap-x-0 lg:gap-y-8">
+        {/* Cars Grid */}
+        <div className={`${language === 'ar' ? 'rtl' : 'ltr'} grid grid-cols-1 lg:grid-cols-3 gap-6`}>
           {filteredCars.map((car, idx) => {
             const position = idx % 3; // 0: left, 1: center, 2: right
             return (
               <div
                 key={car.car_id}
                 ref={addToRefs}
-                className={`relative bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-700 group cursor-pointer max-w-md mx-auto w-full ${
+                className={`relative bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-700 group cursor-pointer ${
                   visibleCards.has(idx)
                     ? 'opacity-100 scale-100'
                     : 'opacity-0 scale-75'
