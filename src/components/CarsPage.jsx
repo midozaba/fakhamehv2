@@ -87,35 +87,12 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, c
     }
   };
 
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-12">
-      <div className="container mx-auto px-4 max-w-7xl">
-        {/* Header Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-blue-900 mb-4">
-            {t('cars')}
-          </h1>
-        </div>
+    <div className={`${language === 'ar' ? 'rtl' : 'ltr'} py-8`}>
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold mb-8 text-gray-800">{t('cars')}</h2>
 
-<<<<<<< Updated upstream
-        {/* Filters Section */}
-        <div className={`${language === 'ar' ? 'rtl' : 'ltr'} bg-white p-6 rounded-2xl shadow-xl mb-8`}>
-=======
-<<<<<<< HEAD
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
-            <p className="mt-4 text-gray-600">Loading cars...</p>
-          </div>
-        ) : (
-          <>
-            <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
-=======
-        {/* Filters Section */}
-        <div className={`${language === 'ar' ? 'rtl' : 'ltr'} bg-white p-6 rounded-2xl shadow-xl mb-8`}>
->>>>>>> 52d7a239c978a3a28868d4670cb48755d68ab059
->>>>>>> Stashed changes
+        <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2 text-blue-800">
@@ -152,68 +129,74 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, c
           </div>
         </div>
 
-        {/* Cars Grid */}
-        <div className={`${language === 'ar' ? 'rtl' : 'ltr'} grid grid-cols-1 lg:grid-cols-3 gap-6`}>
-          {filteredCars.map((car, idx) => {
-            const position = idx % 3; // 0: left, 1: center, 2: right
-            return (
-              <div
-                key={car.car_id}
-                ref={addToRefs}
-                className={`relative bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-700 group cursor-pointer ${
-                  visibleCards.has(idx)
-                    ? 'opacity-100 scale-100'
-                    : 'opacity-0 scale-75'
-                }`}
-                style={{ transitionDelay: `${position * 150}ms` }}
-              >
-                {/* Car Image */}
-                <div className="w-full aspect-[16/9]">
-                  <img
-                    src={getCarImage(car.car_barnd, car.car_type)}
-                    alt={`${car.car_barnd} ${car.car_type}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600">Loading cars...</p>
+          </div>
+        ) : (
+          <>
+            {/* Cars Grid */}
+            <div className={`${language === 'ar' ? 'rtl' : 'ltr'} grid grid-cols-1 lg:grid-cols-3 gap-6`}>
+              {filteredCars.map((car, idx) => {
+                const position = idx % 3; // 0: left, 1: center, 2: right
+                return (
+                  <div
+                    key={car.car_id}
+                    ref={addToRefs}
+                    className={`relative bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-700 group cursor-pointer ${
+                      visibleCards.has(idx)
+                        ? 'opacity-100 scale-100'
+                        : 'opacity-0 scale-75'
+                    }`}
+                    style={{ transitionDelay: `${position * 150}ms` }}
+                  >
+                    {/* Car Image */}
+                    <div className="w-full aspect-[16/9]">
+                      <img
+                        src={getCarImage(car.car_barnd, car.car_type)}
+                        alt={`${car.car_barnd} ${car.car_type}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
 
-                {/* Hover Overlay with Information */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-3">
-                  <h3 className="text-lg font-bold mb-1 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                    {car.car_barnd} {car.car_type}
-                  </h3>
-                  <p className="text-gray-200 text-xs mb-2 italic transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
-                    {t('orSimilar')}
-                  </p>
-                  <div className="text-xs text-gray-200 mb-2 space-y-0.5 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-100">
-                    <p>{t('model')}: {car.car_model}</p>
-                    <p>{t('color')}: {t(car.car_color)}</p>
-                    <p>Category: {t(categorizeCarType(car.car_type))}</p>
-                  </div>
-                  <div className="mb-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-150">
-                    <div className="text-xl font-bold text-white">
-                      {currencySymbol} {convertPrice(parseFloat(car.price_per_day))} <span className="text-sm text-gray-300">{t('perDay')}</span>
+                    {/* Hover Overlay with Information */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-3">
+                      <h3 className="text-lg font-bold mb-1 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                        {car.car_barnd} {car.car_type}
+                      </h3>
+                      <p className="text-gray-200 text-xs mb-2 italic transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                        {t('orSimilar')}
+                      </p>
+                      <div className="text-xs text-gray-200 mb-2 space-y-0.5 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-100">
+                        <p>{t('model')}: {car.car_model}</p>
+                        <p>{t('color')}: {t(car.car_color)}</p>
+                        <p>Category: {t(categorizeCarType(car.car_type))}</p>
+                      </div>
+                      <div className="mb-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-150">
+                        <div className="text-xl font-bold text-white">
+                          {currencySymbol} {convertPrice(parseFloat(car.price_per_day))} <span className="text-sm text-gray-300">{t('perDay')}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedCar(car);
+                          navigate('/booking');
+                        }}
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-2 text-sm rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all font-semibold transform translate-y-4 group-hover:translate-y-0 duration-500 delay-200 shadow-lg"
+                      >
+                        {t('bookNow')}
+                      </button>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setSelectedCar(car);
-                      navigate('/booking');
-                    }}
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-2 text-sm rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all font-semibold transform translate-y-4 group-hover:translate-y-0 duration-500 delay-200 shadow-lg"
-                  >
-                    {t('bookNow')}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
 
-        {filteredCars.length === 0 && !loading && (
-          <div className="text-center py-12 bg-white rounded-xl shadow-lg">
-            <p className="text-gray-600">No cars found matching your filters</p>
-          </div>
-        )}
+            {filteredCars.length === 0 && (
+              <div className="text-center py-12 bg-white rounded-xl shadow-lg">
+                <p className="text-gray-600">No cars found matching your filters</p>
+              </div>
+            )}
           </>
         )}
       </div>
