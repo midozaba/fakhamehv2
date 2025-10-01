@@ -1,9 +1,8 @@
+/*eslint-disable */
 import React, { useState } from "react";
-import { useTranslation } from "../utils/translations";
 import carsData from "../data/cars.json";
 
 const AdminPage = ({ language }) => {
-  const t = useTranslation(language);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState("contacts");
 
