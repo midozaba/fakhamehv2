@@ -147,15 +147,15 @@ const AppLayout = () => {
               }
             />
             <Route
-              path="/contact"
+              path="/contact-us"
               element={<ContactUs language={language} />}
             />
             <Route
-              path="/terms"
+              path="/terms-of-service"
               element={<TermsOfService language={language} />}
             />
             <Route
-              path="/about"
+              path="/about-us"
               element={<AboutUs language={language} />}
             />
             <Route

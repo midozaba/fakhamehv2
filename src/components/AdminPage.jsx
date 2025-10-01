@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import carsData from "../data/cars.json";
 
-const AdminPage = ({ language }) => {
+const AdminPage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState("contacts");
 
@@ -10,31 +10,31 @@ const AdminPage = ({ language }) => {
   const [contactResponses] = useState([
     {
       id: 1,
-      name: "Ahmad Hassan",
+      name: "أحمد حسن",
       email: "ahmad@example.com",
       phone: "+962 77 123 4567",
-      subject: "Car Rental Inquiry",
-      message: "I'm interested in renting a luxury car for a week.",
+      subject: "استفسار عن تأجير السيارات",
+      message: "أنا مهتم بتأجير سيارة فاخرة لمدة أسبوع.",
       date: "2025-09-28",
       status: "new"
     },
     {
       id: 2,
-      name: "Sara Mohammed",
+      name: "سارة محمد",
       email: "sara@example.com",
       phone: "+962 79 987 6543",
-      subject: "Booking Question",
-      message: "Do you offer airport pickup service?",
+      subject: "سؤال حول الحجز",
+      message: "هل تقدمون خدمة التوصيل للمطار؟",
       date: "2025-09-27",
       status: "read"
     },
     {
       id: 3,
-      name: "Omar Ali",
+      name: "عمر علي",
       email: "omar@example.com",
       phone: "+962 78 555 1234",
-      subject: "Special Request",
-      message: "Can I rent a car for a wedding event?",
+      subject: "طلب خاص",
+      message: "هل يمكنني استئجار سيارة لحفل زفاف؟",
       date: "2025-09-26",
       status: "responded"
     }
@@ -43,69 +43,69 @@ const AdminPage = ({ language }) => {
   const [bookings, setBookings] = useState([
     {
       id: 1,
-      customerName: "Khaled Ibrahim",
+      customerName: "خالد إبراهيم",
       email: "khaled@example.com",
       phone: "+962 77 111 2222",
-      carName: "Mercedes S-Class",
+      carName: "مرسيدس S-Class",
       pickupDate: "2025-10-05",
       returnDate: "2025-10-10",
       days: 5,
-      totalPrice: "350 JOD",
+      totalPrice: "350 دينار",
       status: "pending",
-      insurance: "Full Coverage",
+      insurance: "تأمين شامل",
       license: "123456789",
       address: {
-        street: "King Abdullah II Street, Building 25",
-        city: "Amman",
-        area: "Abdoun",
+        street: "شارع الملك عبدالله الثاني، مبنى 25",
+        city: "عمان",
+        area: "عبدون",
         postalCode: "11941",
-        country: "Jordan"
+        country: "الأردن"
       },
       idDocumentUrl: "https://example.com/documents/khaled-id.jpg",
       passportDocumentUrl: "https://example.com/documents/khaled-passport.jpg"
     },
     {
       id: 2,
-      customerName: "Layla Mahmoud",
+      customerName: "ليلى محمود",
       email: "layla@example.com",
       phone: "+962 79 333 4444",
       carName: "BMW 5 Series",
       pickupDate: "2025-10-03",
       returnDate: "2025-10-07",
       days: 4,
-      totalPrice: "280 JOD",
+      totalPrice: "280 دينار",
       status: "pending",
-      insurance: "Basic",
+      insurance: "تأمين أساسي",
       license: "987654321",
       address: {
-        street: "Mecca Street, Al-Rabia Complex",
-        city: "Amman",
-        area: "Shmeisani",
+        street: "شارع مكة، مجمع الرابية",
+        city: "عمان",
+        area: "الشميساني",
         postalCode: "11953",
-        country: "Jordan"
+        country: "الأردن"
       },
       idDocumentUrl: "https://example.com/documents/layla-id.jpg",
       passportDocumentUrl: "https://example.com/documents/layla-passport.jpg"
     },
     {
       id: 3,
-      customerName: "Fadi Nasser",
+      customerName: "فادي ناصر",
       email: "fadi@example.com",
       phone: "+962 78 999 8888",
-      carName: "Toyota Camry",
+      carName: "تويوتا كامري",
       pickupDate: "2025-09-30",
       returnDate: "2025-10-02",
       days: 2,
-      totalPrice: "80 JOD",
+      totalPrice: "80 دينار",
       status: "confirmed",
-      insurance: "Full Coverage",
+      insurance: "تأمين شامل",
       license: "456789123",
       address: {
-        street: "Gardens Street, Villa 12",
-        city: "Amman",
-        area: "Gardens",
+        street: "شارع الجاردنز، فيلا 12",
+        city: "عمان",
+        area: "الجاردنز",
         postalCode: "11194",
-        country: "Jordan"
+        country: "الأردن"
       },
       idDocumentUrl: "https://example.com/documents/fadi-id.jpg",
       passportDocumentUrl: "https://example.com/documents/fadi-passport.jpg"
@@ -203,7 +203,7 @@ const AdminPage = ({ language }) => {
   };
 
   const handleDeleteReview = (reviewId) => {
-    if (window.confirm("Are you sure you want to delete this review?")) {
+    if (window.confirm("هل أنت متأكد من حذف هذا التقييم؟")) {
       setReviews(reviews.filter(review => review.id !== reviewId));
     }
   };
@@ -290,7 +290,7 @@ const AdminPage = ({ language }) => {
   };
 
   const handleDeleteCar = (carId) => {
-    if (window.confirm("Are you sure you want to delete this car?")) {
+    if (window.confirm("هل أنت متأكد من حذف هذه السيارة؟")) {
       setCars(cars.filter(car => car.car_id !== carId));
       // TODO: Send to backend API
       console.log("Car deleted:", carId);
@@ -331,10 +331,27 @@ const AdminPage = ({ language }) => {
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
+  const getStatusText = (status) => {
+    const statusTexts = {
+      new: "جديد",
+      read: "مقروء",
+      responded: "تم الرد",
+      confirmed: "مؤكد",
+      pending: "قيد الانتظار",
+      completed: "مكتمل",
+      rejected: "مرفوض",
+      cancelled: "ملغي",
+      available: "متاح",
+      rented: "مؤجر",
+      maintenance: "تحت الصيانة"
+    };
+    return statusTexts[status] || status;
+  };
+
   // Login Screen
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center px-4 py-12">
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center px-4 py-12" dir="rtl">
         <div className="max-w-md w-full">
           <div className="bg-white rounded-2xl shadow-2xl p-8">
             <div className="text-center mb-8">
@@ -343,31 +360,31 @@ const AdminPage = ({ language }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Login</h1>
-              <p className="text-gray-600">Enter your credentials to access the dashboard</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">تسجيل دخول الإدارة</h1>
+              <p className="text-gray-600">أدخل بيانات الاعتماد الخاصة بك للوصول إلى لوحة التحكم</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
+                  اسم المستخدم
                 </label>
                 <input
-                  type="email"
+                  type="text"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="admin@fakhama.com"
+                  placeholder="admin"
                   required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
+                  كلمة المرور
                 </label>
                 <input
                   type="password"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter your password"
+                  placeholder="أدخل كلمة المرور"
                   required
                 />
               </div>
@@ -375,10 +392,10 @@ const AdminPage = ({ language }) => {
               <div className="flex items-center justify-between">
                 <label className="flex items-center">
                   <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500" />
-                  <span className="ml-2 text-sm text-gray-600">Remember me</span>
+                  <span className="mr-2 text-sm text-gray-600">تذكرني</span>
                 </label>
                 <a href="#" className="text-sm text-blue-600 hover:text-blue-700">
-                  Forgot password?
+                  نسيت كلمة المرور؟
                 </a>
               </div>
 
@@ -386,7 +403,7 @@ const AdminPage = ({ language }) => {
                 type="submit"
                 className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-3 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-900 transition-all duration-300 transform hover:scale-105 active:scale-95"
               >
-                Sign In
+                تسجيل الدخول
               </button>
             </form>
           </div>
@@ -397,12 +414,12 @@ const AdminPage = ({ language }) => {
 
   // Admin Dashboard
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
       <div className="bg-white shadow-md">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-blue-900">Admin Dashboard</h1>
+            <h1 className="text-2xl font-bold text-blue-900">لوحة تحكم الإدارة</h1>
             <button
               onClick={() => setIsLoggedIn(false)}
               className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
@@ -410,7 +427,7 @@ const AdminPage = ({ language }) => {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              Logout
+              تسجيل الخروج
             </button>
           </div>
         </div>
@@ -422,7 +439,7 @@ const AdminPage = ({ language }) => {
           <div className="bg-white rounded-xl shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">Total Contacts</p>
+                <p className="text-gray-600 text-sm">إجمالي الرسائل</p>
                 <p className="text-3xl font-bold text-blue-900">{contactResponses.length}</p>
               </div>
               <div className="bg-blue-100 p-3 rounded-lg">
@@ -436,7 +453,7 @@ const AdminPage = ({ language }) => {
           <div className="bg-white rounded-xl shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">Total Bookings</p>
+                <p className="text-gray-600 text-sm">إجمالي الحجوزات</p>
                 <p className="text-3xl font-bold text-blue-900">{bookings.length}</p>
               </div>
               <div className="bg-green-100 p-3 rounded-lg">
@@ -450,7 +467,7 @@ const AdminPage = ({ language }) => {
           <div className="bg-white rounded-xl shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">Pending Approval</p>
+                <p className="text-gray-600 text-sm">قيد الموافقة</p>
                 <p className="text-3xl font-bold text-yellow-600">
                   {bookings.filter(b => b.status === "pending").length}
                 </p>
@@ -466,7 +483,7 @@ const AdminPage = ({ language }) => {
           <div className="bg-white rounded-xl shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">Available Cars</p>
+                <p className="text-gray-600 text-sm">السيارات المتاحة</p>
                 <p className="text-3xl font-bold text-purple-600">
                   {cars.filter(c => c.status === "available").length}
                 </p>
@@ -484,7 +501,7 @@ const AdminPage = ({ language }) => {
           <div className="bg-white rounded-xl shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">Total Cars in Fleet</p>
+                <p className="text-gray-600 text-sm">إجمالي الأسطول</p>
                 <p className="text-3xl font-bold text-indigo-600">{cars.length}</p>
               </div>
               <div className="bg-indigo-100 p-3 rounded-lg">
@@ -498,7 +515,7 @@ const AdminPage = ({ language }) => {
           <div className="bg-white rounded-xl shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">Customer Reviews</p>
+                <p className="text-gray-600 text-sm">تقييمات العملاء</p>
                 <p className="text-3xl font-bold text-pink-600">{reviews.length}</p>
               </div>
               <div className="bg-pink-100 p-3 rounded-lg">
@@ -522,7 +539,7 @@ const AdminPage = ({ language }) => {
                     : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
                 }`}
               >
-                Contact Responses
+                رسائل التواصل
               </button>
               <button
                 onClick={() => setActiveTab("bookings")}
@@ -532,7 +549,7 @@ const AdminPage = ({ language }) => {
                     : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
                 }`}
               >
-                Bookings
+                الحجوزات
               </button>
               <button
                 onClick={() => setActiveTab("reviews")}
@@ -542,7 +559,7 @@ const AdminPage = ({ language }) => {
                     : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
                 }`}
               >
-                Customer Reviews
+                تقييمات العملاء
               </button>
               <button
                 onClick={() => setActiveTab("cars")}
@@ -552,7 +569,7 @@ const AdminPage = ({ language }) => {
                     : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
                 }`}
               >
-                Manage Cars
+                إدارة السيارات
               </button>
             </nav>
           </div>
@@ -561,18 +578,18 @@ const AdminPage = ({ language }) => {
             {/* Contact Responses Tab */}
             {activeTab === "contacts" && (
               <div className="space-y-4">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Contact Form Submissions</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">رسائل نموذج التواصل</h2>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الاسم</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">البريد الإلكتروني</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الهاتف</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الموضوع</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الرسالة</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -586,7 +603,7 @@ const AdminPage = ({ language }) => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{contact.date}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(contact.status)}`}>
-                              {contact.status}
+                              {getStatusText(contact.status)}
                             </span>
                           </td>
                         </tr>
@@ -600,22 +617,22 @@ const AdminPage = ({ language }) => {
             {/* Bookings Tab */}
             {activeTab === "bookings" && (
               <div className="space-y-4">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Customer Bookings</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">حجوزات العملاء</h2>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Car</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pickup Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Return Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Insurance</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documents</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العميل</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التواصل</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">السيارة</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاريخ الاستلام</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاريخ الإرجاع</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الأيام</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التأمين</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجمالي</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الوثائق</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -623,11 +640,11 @@ const AdminPage = ({ language }) => {
                         <tr key={booking.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">{booking.customerName}</div>
-                            <div className="text-xs text-gray-500">License: {booking.license}</div>
+                            <div className="text-xs text-gray-500" dir="ltr">رخصة: {booking.license}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-600">{booking.email}</div>
-                            <div className="text-xs text-gray-500">{booking.phone}</div>
+                            <div className="text-sm text-gray-600" dir="ltr">{booking.email}</div>
+                            <div className="text-xs text-gray-500" dir="ltr">{booking.phone}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{booking.carName}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{booking.pickupDate}</td>
@@ -644,12 +661,12 @@ const AdminPage = ({ language }) => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                               </svg>
-                              View
+                              عرض
                             </button>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                              {booking.status}
+                              {getStatusText(booking.status)}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -659,13 +676,13 @@ const AdminPage = ({ language }) => {
                                   onClick={() => handleBookingApproval(booking.id, true)}
                                   className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                                 >
-                                  Approve
+                                  قبول
                                 </button>
                                 <button
                                   onClick={() => handleBookingApproval(booking.id, false)}
                                   className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                                 >
-                                  Reject
+                                  رفض
                                 </button>
                               </div>
                             )}
@@ -682,17 +699,17 @@ const AdminPage = ({ language }) => {
             {activeTab === "reviews" && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900">Customer Reviews Management</h2>
+                  <h2 className="text-xl font-bold text-gray-900">إدارة تقييمات العملاء</h2>
                 </div>
 
                 {/* Add New Review Form */}
                 <div className="bg-gray-50 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Review</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">إضافة تقييم جديد</h3>
                   <form onSubmit={handleAddReview} className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Customer Name (English)
+                          اسم العميل (بالإنجليزية)
                         </label>
                         <input
                           type="text"
@@ -705,7 +722,7 @@ const AdminPage = ({ language }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Customer Name (Arabic)
+                          اسم العميل (بالعربية)
                         </label>
                         <input
                           type="text"
@@ -720,24 +737,24 @@ const AdminPage = ({ language }) => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Rating
+                        التقييم
                       </label>
                       <select
                         value={newReview.rating}
                         onChange={(e) => setNewReview({...newReview, rating: parseInt(e.target.value)})}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
-                        <option value={5}>5 Stars - Excellent</option>
-                        <option value={4}>4 Stars - Very Good</option>
-                        <option value={3}>3 Stars - Good</option>
-                        <option value={2}>2 Stars - Fair</option>
-                        <option value={1}>1 Star - Poor</option>
+                        <option value={5}>5 نجوم - ممتاز</option>
+                        <option value={4}>4 نجوم - جيد جداً</option>
+                        <option value={3}>3 نجوم - جيد</option>
+                        <option value={2}>نجمتان - مقبول</option>
+                        <option value={1}>نجمة واحدة - ضعيف</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Review Comment (English)
+                        التعليق (بالإنجليزية)
                       </label>
                       <textarea
                         value={newReview.comment}
@@ -751,7 +768,7 @@ const AdminPage = ({ language }) => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Review Comment (Arabic)
+                        التعليق (بالعربية)
                       </label>
                       <textarea
                         value={newReview.commentAr}
@@ -767,14 +784,14 @@ const AdminPage = ({ language }) => {
                       type="submit"
                       className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                      Add Review
+                      إضافة التقييم
                     </button>
                   </form>
                 </div>
 
                 {/* Reviews List */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">All Reviews ({reviews.length})</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">جميع التقييمات ({reviews.length})</h3>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {reviews.map((review) => (
                       <div key={review.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
@@ -802,11 +819,11 @@ const AdminPage = ({ language }) => {
                           </button>
                         </div>
                         <div className="mb-2">
-                          <p className="font-semibold text-gray-900">{review.customerName}</p>
-                          <p className="text-sm text-gray-600 font-arabic">{review.customerNameAr}</p>
+                          <p className="font-semibold text-gray-900">{review.customerNameAr}</p>
+                          <p className="text-sm text-gray-600">{review.customerName}</p>
                         </div>
-                        <p className="text-sm text-gray-700 mb-2 italic">"{review.comment}"</p>
-                        <p className="text-sm text-gray-700 mb-2 italic font-arabic" dir="rtl">"{review.commentAr}"</p>
+                        <p className="text-sm text-gray-700 mb-2 italic">"{review.commentAr}"</p>
+                        <p className="text-sm text-gray-700 mb-2 italic" dir="ltr">"{review.comment}"</p>
                         <p className="text-xs text-gray-500">{review.date}</p>
                       </div>
                     ))}
@@ -819,19 +836,19 @@ const AdminPage = ({ language }) => {
             {activeTab === "cars" && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900">Car Fleet Management</h2>
+                  <h2 className="text-xl font-bold text-gray-900">إدارة أسطول السيارات</h2>
                 </div>
 
                 {/* Add/Edit Car Form */}
                 <div className="bg-gray-50 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {editingCar ? "Edit Car" : "Add New Car"}
+                    {editingCar ? "تعديل السيارة" : "إضافة سيارة جديدة"}
                   </h3>
                   <form onSubmit={editingCar ? handleUpdateCar : handleAddCar} className="space-y-4">
                     <div className="grid md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Brand *
+                          الماركة *
                         </label>
                         <input
                           type="text"
@@ -844,7 +861,7 @@ const AdminPage = ({ language }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Model/Type *
+                          الموديل / النوع *
                         </label>
                         <input
                           type="text"
@@ -857,7 +874,7 @@ const AdminPage = ({ language }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Year *
+                          السنة *
                         </label>
                         <input
                           type="number"
@@ -875,7 +892,7 @@ const AdminPage = ({ language }) => {
                     <div className="grid md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Car Number *
+                          رقم السيارة *
                         </label>
                         <input
                           type="number"
@@ -888,20 +905,20 @@ const AdminPage = ({ language }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Color *
+                          اللون *
                         </label>
                         <input
                           type="text"
                           value={newCar.car_color}
                           onChange={(e) => setNewCar({...newCar, car_color: e.target.value})}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="White, Black, etc."
+                          placeholder="أبيض، أسود، إلخ"
                           required
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Mileage
+                          الكيلومترات
                         </label>
                         <input
                           type="number"
@@ -916,7 +933,7 @@ const AdminPage = ({ language }) => {
                     <div className="grid md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Price Per Day (JOD) *
+                          السعر لليوم (دينار) *
                         </label>
                         <input
                           type="number"
@@ -930,7 +947,7 @@ const AdminPage = ({ language }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Price Per Week (JOD) *
+                          السعر للأسبوع (دينار) *
                         </label>
                         <input
                           type="number"
@@ -944,7 +961,7 @@ const AdminPage = ({ language }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Price Per Month (JOD) *
+                          السعر للشهر (دينار) *
                         </label>
                         <input
                           type="number"
@@ -961,28 +978,28 @@ const AdminPage = ({ language }) => {
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Status *
+                          الحالة *
                         </label>
                         <select
                           value={newCar.status}
                           onChange={(e) => setNewCar({...newCar, status: e.target.value})}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
-                          <option value="available">Available</option>
-                          <option value="rented">Rented</option>
-                          <option value="maintenance">Under Maintenance</option>
+                          <option value="available">متاح</option>
+                          <option value="rented">مؤجر</option>
+                          <option value="maintenance">تحت الصيانة</option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Image URL
+                          رابط الصورة
                         </label>
                         <input
                           type="text"
                           value={newCar.image}
                           onChange={(e) => setNewCar({...newCar, image: e.target.value})}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="https://example.com/car.jpg (will add upload later)"
+                          placeholder="https://example.com/car.jpg (سنضيف خاصية الرفع لاحقاً)"
                         />
                       </div>
                     </div>
@@ -992,7 +1009,7 @@ const AdminPage = ({ language }) => {
                         type="submit"
                         className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
-                        {editingCar ? "Update Car" : "Add Car"}
+                        {editingCar ? "تحديث السيارة" : "إضافة السيارة"}
                       </button>
                       {editingCar && (
                         <button
@@ -1000,7 +1017,7 @@ const AdminPage = ({ language }) => {
                           onClick={handleCancelEdit}
                           className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
                         >
-                          Cancel
+                          إلغاء
                         </button>
                       )}
                     </div>
@@ -1009,21 +1026,21 @@ const AdminPage = ({ language }) => {
 
                 {/* Cars List */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">All Cars ({cars.length})</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">جميع السيارات ({cars.length})</h3>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand & Model</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Car #</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Color</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price/Day</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price/Week</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price/Month</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الرقم</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الماركة والموديل</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">السنة</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">رقم السيارة</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">اللون</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">سعر اليوم</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">سعر الأسبوع</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">سعر الشهر</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -1037,12 +1054,12 @@ const AdminPage = ({ language }) => {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{car.CAR_MODEL}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{car.CAR_NUM}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{car.car_color}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{car.PRICEPERDAY} JOD</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{car.priceperweek} JOD</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{car.pricepermonth} JOD</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{car.PRICEPERDAY} دينار</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{car.priceperweek} دينار</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{car.pricepermonth} دينار</td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(car.status)}`}>
-                                {car.status}
+                                {getStatusText(car.status)}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -1051,13 +1068,13 @@ const AdminPage = ({ language }) => {
                                   onClick={() => handleEditCar(car)}
                                   className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                                 >
-                                  Edit
+                                  تعديل
                                 </button>
                                 <button
                                   onClick={() => handleDeleteCar(car.car_id)}
                                   className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                                 >
-                                  Delete
+                                  حذف
                                 </button>
                               </div>
                             </td>
@@ -1085,7 +1102,7 @@ const AdminPage = ({ language }) => {
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900">
-                Customer Documents - {viewingDocuments.customerName}
+                وثائق العميل - {viewingDocuments.customerName}
               </h2>
               <button
                 onClick={() => setViewingDocuments(null)}
@@ -1100,34 +1117,34 @@ const AdminPage = ({ language }) => {
             <div className="p-6 space-y-6">
               {/* Customer Info Summary */}
               <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Booking Information</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">معلومات الحجز</h3>
                 <div className="grid md:grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-600">Email:</span>
-                    <span className="ml-2 font-medium">{viewingDocuments.email}</span>
+                    <span className="text-gray-600">البريد الإلكتروني:</span>
+                    <span className="mr-2 font-medium" dir="ltr">{viewingDocuments.email}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Phone:</span>
-                    <span className="ml-2 font-medium">{viewingDocuments.phone}</span>
+                    <span className="text-gray-600">الهاتف:</span>
+                    <span className="mr-2 font-medium" dir="ltr">{viewingDocuments.phone}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">License Number:</span>
-                    <span className="ml-2 font-medium">{viewingDocuments.license}</span>
+                    <span className="text-gray-600">رقم الرخصة:</span>
+                    <span className="mr-2 font-medium" dir="ltr">{viewingDocuments.license}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Car:</span>
-                    <span className="ml-2 font-medium">{viewingDocuments.carName}</span>
+                    <span className="text-gray-600">السيارة:</span>
+                    <span className="mr-2 font-medium">{viewingDocuments.carName}</span>
                   </div>
                 </div>
 
                 {/* Address Information */}
                 {viewingDocuments.address && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h4 className="font-semibold text-gray-900 mb-2">Address</h4>
+                    <h4 className="font-semibold text-gray-900 mb-2">العنوان</h4>
                     <div className="text-sm text-gray-700">
                       <p>{viewingDocuments.address.street}</p>
                       <p>
-                        {viewingDocuments.address.area && `${viewingDocuments.address.area}, `}
+                        {viewingDocuments.address.area && `${viewingDocuments.address.area}، `}
                         {viewingDocuments.address.city}
                         {viewingDocuments.address.postalCode && ` ${viewingDocuments.address.postalCode}`}
                       </p>
@@ -1140,7 +1157,7 @@ const AdminPage = ({ language }) => {
               {/* ID Document */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900">National ID / Residence Card</h3>
+                  <h3 className="font-semibold text-gray-900">الهوية الوطنية / بطاقة الإقامة</h3>
                   <a
                     href={viewingDocuments.idDocumentUrl}
                     target="_blank"
@@ -1150,7 +1167,7 @@ const AdminPage = ({ language }) => {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    Download
+                    تحميل
                   </a>
                 </div>
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -1168,8 +1185,8 @@ const AdminPage = ({ language }) => {
                       <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <p>Document preview not available</p>
-                      <p className="text-sm">Click download to view</p>
+                      <p>معاينة الوثيقة غير متوفرة</p>
+                      <p className="text-sm">انقر على تحميل للعرض</p>
                     </div>
                   </div>
                 </div>
@@ -1178,7 +1195,7 @@ const AdminPage = ({ language }) => {
               {/* Passport Document */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900">Passport</h3>
+                  <h3 className="font-semibold text-gray-900">جواز السفر</h3>
                   <a
                     href={viewingDocuments.passportDocumentUrl}
                     target="_blank"
@@ -1188,7 +1205,7 @@ const AdminPage = ({ language }) => {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    Download
+                    تحميل
                   </a>
                 </div>
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -1206,8 +1223,8 @@ const AdminPage = ({ language }) => {
                       <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <p>Document preview not available</p>
-                      <p className="text-sm">Click download to view</p>
+                      <p>معاينة الوثيقة غير متوفرة</p>
+                      <p className="text-sm">انقر على تحميل للعرض</p>
                     </div>
                   </div>
                 </div>
@@ -1219,7 +1236,7 @@ const AdminPage = ({ language }) => {
                 onClick={() => setViewingDocuments(null)}
                 className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
               >
-                Close
+                إغلاق
               </button>
             </div>
           </div>

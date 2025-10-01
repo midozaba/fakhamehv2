@@ -43,7 +43,7 @@ const Header = ({ language, setLanguage, currency, setCurrency }) => {
             {/* Home Button */}
             <Link
               to="/"
-              className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out justify-self-center ${
+              className={`px-5 py-2.5 text-base rounded-xl transition-all duration-300 ease-in-out justify-self-center ${
                 currentPage === "/"
                   ? "bg-blue-900 text-white"
                   : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
@@ -54,7 +54,7 @@ const Header = ({ language, setLanguage, currency, setCurrency }) => {
             {/* Cars Button */}
             <Link
               to="/cars"
-              className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out ${
+              className={`px-5 py-2.5 text-base rounded-xl transition-all duration-300 ease-in-out ${
                 currentPage === "/cars"
                   ? "bg-blue-900 text-white"
                   : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
@@ -64,9 +64,9 @@ const Header = ({ language, setLanguage, currency, setCurrency }) => {
             </Link>
             {/* TOS Button */}
             <Link
-              to="/terms"
-              className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out justify-self-center ${
-                currentPage === "/terms"
+              to="/terms-of-service"
+              className={`px-5 py-2.5 text-base rounded-xl transition-all duration-300 ease-in-out justify-self-center ${
+                currentPage === "/terms-of-service"
                   ? "bg-blue-900 text-white"
                   : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
               }`}
@@ -75,9 +75,9 @@ const Header = ({ language, setLanguage, currency, setCurrency }) => {
             </Link>
             {/* About us Button */}
             <Link
-              to="/about"
-              className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out justify-self-center ${
-                currentPage === "/about"
+              to="/about-us"
+              className={`px-5 py-2.5 text-base rounded-xl transition-all duration-300 ease-in-out justify-self-center ${
+                currentPage === "/about-us"
                   ? "bg-blue-900 text-white"
                   : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
               }`}
@@ -86,9 +86,9 @@ const Header = ({ language, setLanguage, currency, setCurrency }) => {
             </Link>
             {/* Contact us Button */}
             <Link
-              to="/contact"
-              className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out justify-self-center ${
-                currentPage === "/contact"
+              to="/contact-us"
+              className={`px-5 py-2.5 text-base rounded-xl transition-all duration-300 ease-in-out justify-self-center ${
+                currentPage === "/contact-us"
                   ? "bg-blue-900 text-white"
                   : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
               }`}
@@ -150,10 +150,10 @@ const Header = ({ language, setLanguage, currency, setCurrency }) => {
                 {t("cars")}
               </Link>
               <Link
-                to="/terms"
+                to="/terms-of-service"
                 onClick={() => setMobileMenuOpen(false)}
                 className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out text-left ${
-                  currentPage === "/terms"
+                  currentPage === "/terms-of-service"
                     ? "bg-blue-900 text-white"
                     : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
                 }`}
@@ -161,10 +161,10 @@ const Header = ({ language, setLanguage, currency, setCurrency }) => {
                 {t("terms of service")}
               </Link>
               <Link
-                to="/about"
+                to="/about-us"
                 onClick={() => setMobileMenuOpen(false)}
                 className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out text-left ${
-                  currentPage === "/about"
+                  currentPage === "/about-us"
                     ? "bg-blue-900 text-white"
                     : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
                 }`}
@@ -172,10 +172,10 @@ const Header = ({ language, setLanguage, currency, setCurrency }) => {
                 {t("about us")}
               </Link>
               <Link
-                to="/contact"
+                to="/contact-us"
                 onClick={() => setMobileMenuOpen(false)}
                 className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out text-left ${
-                  currentPage === "/contact"
+                  currentPage === "/contact-us"
                     ? "bg-blue-900 text-white"
                     : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
                 }`}
