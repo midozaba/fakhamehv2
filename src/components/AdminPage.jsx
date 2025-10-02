@@ -47,6 +47,10 @@ const AdminPage = () => {
     image_url: ''
   });
 
+  // State for reviews
+  const [reviews, setReviews] = useState([]);
+  const [reviewsFilter, setReviewsFilter] = useState("all");
+
   // State for viewing documents
   const [viewingDocuments, setViewingDocuments] = useState(null);
 
@@ -112,6 +116,26 @@ const AdminPage = () => {
     }
   };
 
+  // Fetch reviews
+  const fetchReviews = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/admin/reviews');
+      if (response.ok) {
+        const data = await response.json();
+        let filteredReviews = data;
+        if (reviewsFilter !== 'all') {
+          filteredReviews = data.filter(r => r.status === reviewsFilter);
+        }
+        setReviews(filteredReviews);
+      }
+    } catch (error) {
+      toast.error('Failed to load reviews');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Load data when tab changes
   useEffect(() => {
     if (isLoggedIn) {
@@ -123,9 +147,28 @@ const AdminPage = () => {
         fetchMessages();
       } else if (activeTab === "cars") {
         fetchCars();
+      } else if (activeTab === "reviews") {
+        fetchReviews();
       }
     }
-  }, [activeTab, isLoggedIn, bookingsFilter, messagesFilter]);
+  }, [activeTab, isLoggedIn, bookingsFilter, messagesFilter, reviewsFilter]);
+
+  // Scroll to top and lock body scroll when modal is open
+  useEffect(() => {
+    if (showCarForm || viewingDocuments) {
+      // Scroll to top instantly
+      window.scrollTo(0, 0);
+      // Lock scroll
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showCarForm, viewingDocuments]);
 
   // Handle booking status update
   const handleBookingStatusUpdate = async (bookingId, newStatus) => {
@@ -214,7 +257,7 @@ const AdminPage = () => {
     try {
       if (editingCar) {
         // Update existing car
-        const response = await updateCar(editingCar.car_id, carFormData);
+        const response = await updateCar(editingCar.id, carFormData);
         if (response.success) {
           toast.success('Car updated successfully');
           setShowCarForm(false);
@@ -271,11 +314,9 @@ const AdminPage = () => {
       case 'pending':
       case 'new':
         return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed':
+      case 'active':
       case 'read':
         return 'bg-blue-100 text-blue-800';
-      case 'in_progress':
-        return 'bg-purple-100 text-purple-800';
       case 'completed':
       case 'replied':
         return 'bg-green-100 text-green-800';
@@ -346,7 +387,8 @@ const AdminPage = () => {
               { id: 'dashboard', name: 'Dashboard', icon: '📊' },
               { id: 'bookings', name: 'Bookings', icon: '🚗' },
               { id: 'contacts', name: 'Messages', icon: '✉️' },
-              { id: 'cars', name: 'Cars', icon: '🔧' }
+              { id: 'cars', name: 'Cars', icon: '🔧' },
+              { id: 'reviews', name: 'Reviews', icon: '⭐' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -431,7 +473,7 @@ const AdminPage = () => {
                   <div className="bg-white p-6 rounded-xl shadow-lg">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-gray-600 text-sm">Confirmed</p>
+                        <p className="text-gray-600 text-sm">Completed</p>
                         <p className="text-3xl font-bold text-green-600">{stats.bookings.confirmed}</p>
                       </div>
                       <div className="text-4xl">✅</div>
@@ -490,8 +532,7 @@ const AdminPage = () => {
               >
                 <option value="all">All Bookings</option>
                 <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="in_progress">In Progress</option>
+                <option value="active">Active</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
@@ -558,9 +599,18 @@ const AdminPage = () => {
                       <h4 className="font-semibold text-gray-700 mb-2">📋 Additional Info</h4>
                       <p><strong>Insurance Type:</strong> {booking.insurance_type}</p>
                       <p><strong>License:</strong> {booking.customer_license}</p>
-                      {booking.additional_services && booking.additional_services.length > 0 && (
-                        <p><strong>Services:</strong> {booking.additional_services.join(', ')}</p>
-                      )}
+                      {booking.additional_services && (() => {
+                        try {
+                          const services = typeof booking.additional_services === 'string'
+                            ? JSON.parse(booking.additional_services)
+                            : booking.additional_services;
+                          return services.length > 0 ? (
+                            <p><strong>Services:</strong> {services.join(', ')}</p>
+                          ) : null;
+                        } catch (e) {
+                          return null;
+                        }
+                      })()}
                     </div>
 
                     <div className="flex gap-3">
@@ -574,7 +624,7 @@ const AdminPage = () => {
                       {booking.status === 'pending' && (
                         <>
                           <button
-                            onClick={() => handleBookingStatusUpdate(booking.booking_id, 'confirmed')}
+                            onClick={() => handleBookingStatusUpdate(booking.booking_id, 'active')}
                             className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all"
                           >
                             Confirm
@@ -588,16 +638,7 @@ const AdminPage = () => {
                         </>
                       )}
 
-                      {booking.status === 'confirmed' && (
-                        <button
-                          onClick={() => handleBookingStatusUpdate(booking.booking_id, 'in_progress')}
-                          className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all"
-                        >
-                          Start Rental
-                        </button>
-                      )}
-
-                      {booking.status === 'in_progress' && (
+                      {booking.status === 'active' && (
                         <button
                           onClick={() => handleBookingStatusUpdate(booking.booking_id, 'completed')}
                           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
@@ -776,7 +817,7 @@ const AdminPage = () => {
                                 Edit
                               </button>
                               <button
-                                onClick={() => handleDeleteCar(car.car_id)}
+                                onClick={() => handleDeleteCar(car.id)}
                                 className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-all"
                               >
                                 Delete
@@ -792,6 +833,166 @@ const AdminPage = () => {
                 {cars.length === 0 && (
                   <div className="text-center py-12">
                     <p className="text-gray-600">No cars found</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Reviews Tab */}
+        {activeTab === "reviews" && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Reviews Management</h2>
+              <select
+                value={reviewsFilter}
+                onChange={(e) => setReviewsFilter(e.target.value)}
+                className="px-4 py-2 border rounded-lg"
+              >
+                <option value="all">All Reviews</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+                <p className="mt-4 text-gray-600">Loading reviews...</p>
+              </div>
+            ) : (
+              <div className="grid gap-6">
+                {reviews.map((review) => (
+                  <div key={review.id} className="bg-white rounded-xl shadow-lg p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-blue-900">{review.customer_name}</h3>
+                        <div className="flex items-center gap-1 mt-2">
+                          {[...Array(5)].map((_, i) => (
+                            <span key={i} className={`text-2xl ${i < review.rating ? 'text-yellow-500' : 'text-gray-300'}`}>
+                              ★
+                            </span>
+                          ))}
+                          <span className="ml-2 text-gray-600">({review.rating}/5)</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(review.status)}`}>
+                          {review.status}
+                        </span>
+                        <p className="text-sm text-gray-500 mt-2">
+                          {formatDate(review.created_at)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                      <p className="text-gray-700 whitespace-pre-wrap">{review.comment}</p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={review.is_featured}
+                          onChange={async (e) => {
+                            try {
+                              const response = await fetch(`/api/reviews/${review.id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  ...review,
+                                  is_featured: e.target.checked
+                                })
+                              });
+                              if (response.ok) {
+                                toast.success('Review updated');
+                                fetchReviews();
+                              }
+                            } catch (error) {
+                              toast.error('Failed to update review');
+                            }
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm font-medium">Featured</span>
+                      </label>
+
+                      <div className="flex-1"></div>
+
+                      {review.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(`/api/reviews/${review.id}`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ ...review, status: 'approved' })
+                                });
+                                if (response.ok) {
+                                  toast.success('Review approved');
+                                  fetchReviews();
+                                }
+                              } catch (error) {
+                                toast.error('Failed to approve review');
+                              }
+                            }}
+                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(`/api/reviews/${review.id}`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ ...review, status: 'rejected' })
+                                });
+                                if (response.ok) {
+                                  toast.success('Review rejected');
+                                  fetchReviews();
+                                }
+                              } catch (error) {
+                                toast.error('Failed to reject review');
+                              }
+                            }}
+                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm('Are you sure you want to delete this review?')) return;
+                          try {
+                            const response = await fetch(`/api/reviews/${review.id}`, {
+                              method: 'DELETE'
+                            });
+                            if (response.ok) {
+                              toast.success('Review deleted');
+                              fetchReviews();
+                            }
+                          } catch (error) {
+                            toast.error('Failed to delete review');
+                          }
+                        }}
+                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {reviews.length === 0 && (
+                  <div className="text-center py-12 bg-white rounded-xl shadow-lg">
+                    <p className="text-gray-600">No reviews found</p>
                   </div>
                 )}
               </div>
@@ -815,34 +1016,43 @@ const AdminPage = () => {
             </div>
             <div className="p-6">
               <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold mb-2">ID Document</h4>
-                  <div className="border rounded-lg p-4 bg-gray-50">
-                    <p className="text-sm text-gray-600 mb-2">File: {viewingDocuments.id_document_path}</p>
-                    <a
-                      href={`http://localhost:3001/${viewingDocuments.id_document_path}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                    >
-                      View/Download
-                    </a>
+                {viewingDocuments.id_document && (
+                  <div>
+                    <h4 className="font-semibold mb-2">ID Document</h4>
+                    <div className="border rounded-lg p-4 bg-gray-50">
+                      <p className="text-sm text-gray-600 mb-2">File: {viewingDocuments.id_document}</p>
+                      <a
+                        href={`/uploads/${viewingDocuments.id_document}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                      >
+                        View/Download
+                      </a>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2">Passport Document</h4>
-                  <div className="border rounded-lg p-4 bg-gray-50">
-                    <p className="text-sm text-gray-600 mb-2">File: {viewingDocuments.passport_document_path}</p>
-                    <a
-                      href={`http://localhost:3001/${viewingDocuments.passport_document_path}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                    >
-                      View/Download
-                    </a>
+                )}
+                {viewingDocuments.passport_document && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Passport Document</h4>
+                    <div className="border rounded-lg p-4 bg-gray-50">
+                      <p className="text-sm text-gray-600 mb-2">File: {viewingDocuments.passport_document}</p>
+                      <a
+                        href={`/uploads/${viewingDocuments.passport_document}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                      >
+                        View/Download
+                      </a>
+                    </div>
                   </div>
-                </div>
+                )}
+                {!viewingDocuments.id_document && !viewingDocuments.passport_document && (
+                  <div className="col-span-2 text-center text-gray-500 py-8">
+                    No documents uploaded for this booking
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -851,8 +1061,16 @@ const AdminPage = () => {
 
       {/* Car Add/Edit Modal */}
       {showCarForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 p-4 overflow-y-auto"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowCarForm(false);
+            }
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto my-8">
             <div className="p-6 border-b flex justify-between items-center">
               <h3 className="text-2xl font-bold">
                 {editingCar ? 'Edit Car' : 'Add New Car'}

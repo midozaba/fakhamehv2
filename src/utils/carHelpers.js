@@ -33,8 +33,9 @@ export const getCarImage = (brand, type) => {
 
 export const calculatePrice = (selectedCar, bookingData) => {
   if (!selectedCar) return { basePrice: 0, insurancePrice: 0, servicesPrice: 0, airportPickupPrice: 0, total: 0 };
+  if (!bookingData || !bookingData.days) return { basePrice: 0, insurancePrice: 0, servicesPrice: 0, airportPickupPrice: 0, total: 0 };
 
-  let basePrice = selectedCar.PRICEPERDAY * bookingData.days;
+  let basePrice = selectedCar.price_per_day * bookingData.days;
   let insurancePrice = 0;
   let servicesPrice = 0;
   let airportPickupPrice = 0;
@@ -43,13 +44,15 @@ export const calculatePrice = (selectedCar, bookingData) => {
   else if (bookingData.insurance === 'full') insurancePrice = 10 * bookingData.days;
   else if (bookingData.insurance === 'premium') insurancePrice = 15 * bookingData.days;
 
-  bookingData.additionalServices.forEach(service => {
+  if (bookingData.additionalServices && Array.isArray(bookingData.additionalServices)) {
+    bookingData.additionalServices.forEach(service => {
     if (service === 'phone') servicesPrice += 3 * bookingData.days;
     else if (service === 'wifi') servicesPrice += 2 * bookingData.days;
     else if (service === 'gps') servicesPrice += 2 * bookingData.days;
     else if (service === 'childSeat') servicesPrice += 1 * bookingData.days;
     else if (service === 'airportPickup') airportPickupPrice = 25; // One-time fee
-  });
+    });
+  }
 
   return {
     basePrice,

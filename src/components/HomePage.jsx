@@ -3,14 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { Car, Shield, Clock, Award, Users, MapPin, Phone, Mail, Star, CheckCircle, Zap, Heart } from 'lucide-react';
 import { useTranslation } from '../utils/translations';
 import { getCarImage } from '../utils/carHelpers';
-import carsData from '../data/cars.json';
+import { fetchCars } from '../services/carsApi';
 import storePic from '../assets/store pic.jpg';
+import { toast } from 'react-toastify';
 
 const HomePage = ({ language, setSelectedCar, currency }) => {
   const navigate = useNavigate();
   const t = useTranslation(language);
   const [visibleSections, setVisibleSections] = useState(new Set());
   const sectionRefs = useRef([]);
+  const [featuredCars, setFeaturedCars] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedRating, setSelectedRating] = useState(0);
 
   // Conversion rate: 1 JOD = 1.41 USD
   const convertPrice = (priceJOD) => {
@@ -18,6 +23,33 @@ const HomePage = ({ language, setSelectedCar, currency }) => {
   };
 
   const currencySymbol = currency === "USD" ? "$" : "JOD";
+
+  // Fetch featured cars and reviews from API
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        // Fetch cars
+        const carsData = await fetchCars();
+        const shuffled = [...carsData].sort(() => 0.5 - Math.random());
+        setFeaturedCars(shuffled.slice(0, 6));
+
+        // Fetch reviews
+        const reviewsResponse = await fetch('/api/reviews');
+        if (reviewsResponse.ok) {
+          const reviewsData = await reviewsResponse.json();
+          setReviews(reviewsData.slice(0, 6)); // Show up to 6 reviews
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toast.error('Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   useEffect(() => {
     const observers = [];
@@ -131,53 +163,68 @@ const HomePage = ({ language, setSelectedCar, currency }) => {
           <div className={`transition-all duration-1000 ${
             visibleSections.has(1) ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
           }`}>
-            <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">{t('cars')}</h2>
+            <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">
+              {language === 'ar' ? 'سياراتنا المميزة' : 'Featured Cars'}
+            </h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {carsData.slice(0, 3).map((car, idx) => (
-              <div
-                key={car.car_id}
-                className={`bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-800 transform hover:-translate-y-2 ${
-                  visibleSections.has(1)
-                    ? 'opacity-100 translate-x-0'
-                    : idx === 0
-                      ? 'opacity-0 -translate-x-32'
-                      : idx === 2
-                        ? 'opacity-0 translate-x-32'
-                        : 'opacity-0 translate-y-16'
-                }`}
-                style={{ transitionDelay: `${idx * 200}ms` }}
-              >
-                <img
-                  src={getCarImage(car.car_barnd, car.CAR_TYPE)}
-                  alt={`${car.car_barnd} ${car.CAR_TYPE}`}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2">{car.car_barnd} {car.CAR_TYPE}</h3>
-                  <p className="text-gray-500 text-sm mb-2 italic">{t('orSimilar')}</p>
-                  <p className="text-gray-600 mb-4">{t('model')}: {car.CAR_MODEL} • {t('color')}: {t(car.car_color)}</p>
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="text-2xl font-bold text-blue-900">
-                      {currencySymbol} {convertPrice(car.PRICEPERDAY)} <span className="text-sm text-gray-500">{t('perDay')}</span>
+
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+              <p className="mt-4 text-gray-600">{language === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-8">
+              {featuredCars.slice(0, 3).map((car, idx) => (
+                <div
+                  key={car.id}
+                  className={`bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-800 transform hover:-translate-y-2 ${
+                    visibleSections.has(1)
+                      ? 'opacity-100 translate-x-0'
+                      : idx === 0
+                        ? 'opacity-0 -translate-x-32'
+                        : idx === 2
+                          ? 'opacity-0 translate-x-32'
+                          : 'opacity-0 translate-y-16'
+                  }`}
+                  style={{ transitionDelay: `${idx * 200}ms` }}
+                >
+                  <img
+                    src={car.image_url || getCarImage(car.car_barnd, car.car_type)}
+                    alt={`${car.car_barnd} ${car.car_type}`}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold mb-2">{car.car_barnd} {car.car_type}</h3>
+                    <p className="text-gray-500 text-sm mb-2 italic">{t('orSimilar')}</p>
+                    <p className="text-gray-600 mb-4">{t('model')}: {car.car_model} • {t('color')}: {car.car_color}</p>
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="text-2xl font-bold text-blue-900">
+                        {currencySymbol} {convertPrice(car.price_per_day)} <span className="text-sm text-gray-500">{t('perDay')}</span>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-sm ${
+                        car.status === 'available'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {car.status === 'available' ? t('available') : (language === 'ar' ? 'مؤجرة' : 'Rented')}
+                      </span>
                     </div>
-                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-                      {t('available')}
-                    </span>
+                    <button
+                      onClick={() => {
+                        setSelectedCar(car);
+                        navigate('/booking');
+                      }}
+                      disabled={car.status !== 'available'}
+                      className="w-full bg-gradient-to-r from-blue-900 to-slate-600 text-white py-3 rounded-lg hover:opacity-90 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {t('bookNow')}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      setSelectedCar(car);
-                      navigate('/booking');
-                    }}
-                    className="w-full bg-gradient-to-r from-blue-900 to-slate-600 text-white py-3 rounded-lg hover:opacity-90 transition-all font-semibold"
-                  >
-                    {t('bookNow')}
-                  </button>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
           <div className="text-center mt-12">
             <button
               onClick={() => navigate('/cars')}
@@ -198,7 +245,7 @@ const HomePage = ({ language, setSelectedCar, currency }) => {
           <div className="grid md:grid-cols-4 gap-8 text-center">
             {[
               { value: '5000+', label: language === 'ar' ? 'عميل سعيد' : 'Happy Clients', side: 'left' },
-              { value: '50+', label: language === 'ar' ? 'سيارة متاحة' : 'Cars Available', side: 'left' },
+              { value: `${featuredCars.length * 2}+`, label: language === 'ar' ? 'سيارة متاحة' : 'Cars Available', side: 'left' },
               { value: '15+', label: language === 'ar' ? 'سنة خبرة' : 'Years Experience', side: 'right' },
               { value: '24/7', label: language === 'ar' ? 'دعم العملاء' : 'Customer Support', side: 'right' }
             ].map((stat, idx) => (
@@ -239,56 +286,41 @@ const HomePage = ({ language, setSelectedCar, currency }) => {
                 : 'Discover the experiences of our happy customers'}
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                name: language === 'ar' ? 'أحمد محمد' : 'Ahmed Mohammed',
-                rating: 5,
-                comment: language === 'ar'
-                  ? 'خدمة ممتازة وسيارات نظيفة. أنصح بشدة!'
-                  : 'Excellent service and clean cars. Highly recommended!',
-                side: 'left'
-              },
-              {
-                name: language === 'ar' ? 'سارة علي' : 'Sarah Ali',
-                rating: 5,
-                comment: language === 'ar'
-                  ? 'أسعار معقولة وموظفين محترفين جداً'
-                  : 'Reasonable prices and very professional staff',
-                side: 'bottom'
-              },
-              {
-                name: language === 'ar' ? 'خالد حسن' : 'Khaled Hassan',
-                rating: 5,
-                comment: language === 'ar'
-                  ? 'تجربة رائعة! السيارة كانت بحالة ممتازة'
-                  : 'Great experience! The car was in excellent condition',
-                side: 'right'
-              }
-            ].map((testimonial, idx) => (
-              <div
-                key={idx}
-                className={`bg-gray-50 p-6 rounded-xl shadow-lg transition-all duration-800 hover:shadow-2xl ${
-                  visibleSections.has(3)
-                    ? 'opacity-100 translate-x-0 translate-y-0'
-                    : testimonial.side === 'left'
-                      ? 'opacity-0 -translate-x-32'
-                      : testimonial.side === 'right'
-                        ? 'opacity-0 translate-x-32'
-                        : 'opacity-0 translate-y-16'
-                }`}
-                style={{ transitionDelay: `${idx * 200}ms` }}
-              >
-                <div className="flex mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="text-yellow-500 fill-yellow-500" size={20} />
-                  ))}
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+            </div>
+          ) : reviews.length > 0 ? (
+            <div className="grid md:grid-cols-3 gap-8">
+              {reviews.slice(0, 3).map((review, idx) => (
+                <div
+                  key={review.id}
+                  className={`bg-gray-50 p-6 rounded-xl shadow-lg transition-all duration-800 hover:shadow-2xl ${
+                    visibleSections.has(3)
+                      ? 'opacity-100 translate-x-0 translate-y-0'
+                      : idx === 0
+                        ? 'opacity-0 -translate-x-32'
+                        : idx === 2
+                          ? 'opacity-0 translate-x-32'
+                          : 'opacity-0 translate-y-16'
+                  }`}
+                  style={{ transitionDelay: `${idx * 200}ms` }}
+                >
+                  <div className="flex mb-4">
+                    {[...Array(review.rating)].map((_, i) => (
+                      <Star key={i} className="text-yellow-500 fill-yellow-500" size={20} />
+                    ))}
+                  </div>
+                  <p className="text-gray-700 mb-4 italic">"{review.comment}"</p>
+                  <p className="font-bold text-gray-800">{review.customer_name}</p>
                 </div>
-                <p className="text-gray-700 mb-4 italic">"{testimonial.comment}"</p>
-                <p className="font-bold text-gray-800">{testimonial.name}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-600">
+              {language === 'ar' ? 'لا توجد آراء بعد' : 'No reviews yet'}
+            </div>
+          )}
         </div>
       </section>
 
@@ -364,6 +396,137 @@ const HomePage = ({ language, setSelectedCar, currency }) => {
         </div>
       </section>
 
+      {/* Submit Review Section */}
+      <section
+        ref={addToRefs}
+        className="py-20 bg-gray-50 overflow-hidden"
+      >
+        <div className="container mx-auto px-4">
+          <div className={`max-w-2xl mx-auto transition-all duration-1000 ${
+            visibleSections.has(5) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          }`}>
+            <div className="text-center mb-8">
+              <Star className="mx-auto mb-4 text-yellow-500" size={48} />
+              <h2 className="text-4xl font-bold mb-4 text-blue-900">
+                {language === 'ar' ? 'شاركنا تجربتك' : 'Share Your Experience'}
+              </h2>
+              <p className="text-gray-600">
+                {language === 'ar'
+                  ? 'رأيك يهمنا! شارك تجربتك معنا'
+                  : 'Your opinion matters! Share your experience with us'}
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-xl p-8">
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+
+                if (selectedRating === 0) {
+                  toast.error(language === 'ar' ? 'الرجاء اختيار التقييم' : 'Please select a rating');
+                  return;
+                }
+
+                const formData = new FormData(e.target);
+                const reviewData = {
+                  customer_name: formData.get('name'),
+                  rating: selectedRating,
+                  comment: formData.get('comment')
+                };
+
+                try {
+                  const response = await fetch('/api/reviews/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reviewData)
+                  });
+
+                  if (response.ok) {
+                    toast.success(language === 'ar'
+                      ? 'شكراً لك! سيتم مراجعة تقييمك قريباً'
+                      : 'Thank you! Your review will be reviewed soon');
+                    e.target.reset();
+                    setSelectedRating(0);
+                  } else {
+                    toast.error(language === 'ar' ? 'فشل إرسال التقييم' : 'Failed to submit review');
+                  }
+                } catch (error) {
+                  toast.error(language === 'ar' ? 'خطأ في الاتصال' : 'Connection error');
+                }
+              }} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {language === 'ar' ? 'الاسم' : 'Name'} *
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder={language === 'ar' ? 'أدخل اسمك' : 'Enter your name'}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {language === 'ar' ? 'التقييم' : 'Rating'} *
+                  </label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setSelectedRating(star)}
+                        className="focus:outline-none"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          className={`w-10 h-10 transition-colors ${
+                            star <= selectedRating
+                              ? 'text-yellow-500 fill-yellow-500'
+                              : 'text-gray-300 fill-gray-300 hover:text-yellow-400 hover:fill-yellow-400'
+                          }`}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <path
+                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                          />
+                        </svg>
+                      </button>
+                    ))}
+                  </div>
+                  {selectedRating > 0 && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {selectedRating} {language === 'ar' ? 'نجوم' : 'stars'}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {language === 'ar' ? 'التعليق' : 'Comment'} *
+                  </label>
+                  <textarea
+                    name="comment"
+                    required
+                    rows="4"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    placeholder={language === 'ar' ? 'أخبرنا عن تجربتك...' : 'Tell us about your experience...'}
+                  ></textarea>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-900 to-slate-600 text-white py-4 rounded-lg text-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105"
+                >
+                  {language === 'ar' ? 'إرسال التقييم' : 'Submit Review'}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section
         ref={addToRefs}
@@ -371,7 +534,7 @@ const HomePage = ({ language, setSelectedCar, currency }) => {
       >
         <div className="container mx-auto px-4 text-center">
           <div className={`transition-all duration-1000 ${
-            visibleSections.has(5) ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-75 translate-y-10'
+            visibleSections.has(6) ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-75 translate-y-10'
           }`}>
             <Heart className="mx-auto mb-6 text-red-400" size={64} />
             <h2 className="text-4xl font-bold mb-4">

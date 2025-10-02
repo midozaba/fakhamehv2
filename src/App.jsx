@@ -218,12 +218,14 @@ const AppLayout = () => {
       className="min-h-screen bg-gray-50"
       dir={language === "ar" ? "rtl" : "ltr"}
     >
-      <Header
-        language={language}
-        setLanguage={handleLanguageChange}
-        currency={currency}
-        setCurrency={setCurrency}
-      />
+      {location.pathname !== '/admin' && (
+        <Header
+          language={language}
+          setLanguage={handleLanguageChange}
+          currency={currency}
+          setCurrency={setCurrency}
+        />
+      )}
 
       <main className="relative overflow-hidden">
         <div
@@ -293,8 +295,8 @@ const AppLayout = () => {
         </div>
       </main>
 
-      <Footer language={language} />
-      <ChatBot language={language} />
+      {location.pathname !== '/admin' && <Footer language={language} />}
+      {location.pathname !== '/admin' && <ChatBot language={language} />}
       <ToastContainer
         position="top-right"
         autoClose={5000}

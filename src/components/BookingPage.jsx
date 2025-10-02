@@ -1,27 +1,52 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Users, Fuel, Shield, Star, Phone, Wifi, MapPin } from 'lucide-react';
 import { useTranslation } from '../utils/translations';
 import { getCarImage, calculatePrice } from '../utils/carHelpers';
 
 const BookingPage = ({
-  language,
-  selectedCar,
-  bookingData,
-  setBookingData,
-  handleBookingSubmit,
-  currency
+  language = 'en',
+  selectedCar = null,
+  bookingData = {},
+  setBookingData = () => {},
+  handleBookingSubmit = () => {},
+  currency = 'JOD'
 }) => {
   const navigate = useNavigate();
+  const { carId } = useParams();
   const t = useTranslation(language);
+  const [car, setCar] = useState(selectedCar);
+  const [loading, setLoading] = useState(!selectedCar && carId);
 
-  // If no car selected, redirect to cars page
-  if (!selectedCar) {
-    navigate('/cars');
-    return null;
+  // Fetch car if carId is in URL but no selectedCar
+  useEffect(() => {
+    if (!selectedCar && carId) {
+      setLoading(true);
+      fetch(`/api/cars/${carId}`)
+        .then(res => res.json())
+        .then(data => {
+          setCar(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('Error fetching car:', err);
+          setLoading(false);
+          navigate('/cars');
+        });
+    } else if (selectedCar) {
+      setCar(selectedCar);
+      setLoading(false);
+    } else if (!selectedCar && !carId) {
+      // No car and no carId, redirect
+      navigate('/cars');
+    }
+  }, [carId, selectedCar, navigate]);
+
+  if (loading || !car) {
+    return <div className="text-center py-8">Loading...</div>;
   }
 
-  const pricing = calculatePrice(selectedCar, bookingData);
+  const pricing = calculatePrice(car, bookingData);
 
   // Conversion rate: 1 JOD = 1.41 USD
   const convertPrice = (priceJOD) => {
@@ -44,20 +69,20 @@ const BookingPage = ({
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             <img
-              src={getCarImage(selectedCar.car_barnd, selectedCar.CAR_TYPE)}
-              alt={`${selectedCar.car_barnd} ${selectedCar.CAR_TYPE}`}
+              src={getCarImage(car.car_barnd, car.car_type)}
+              alt={`${car.car_barnd} ${car.car_type}`}
               className="w-full h-64 object-cover"
             />
             <div className="p-6">
-              <h2 className="text-2xl font-bold mb-4">{selectedCar.car_barnd} {selectedCar.CAR_TYPE}</h2>
+              <h2 className="text-2xl font-bold mb-4">{car.car_barnd} {car.car_type}</h2>
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
                   <span className="text-gray-600">{t('model')}:</span>
-                  <span className="ml-2 font-semibold">{selectedCar.CAR_MODEL}</span>
+                  <span className="ml-2 font-semibold">{car.car_model}</span>
                 </div>
                 <div>
                   <span className="text-gray-600">{t('color')}:</span>
-                  <span className="ml-2 font-semibold">{t(selectedCar.car_color)}</span>
+                  <span className="ml-2 font-semibold">{t(car.car_color)}</span>
                 </div>
               </div>
 
@@ -66,15 +91,15 @@ const BookingPage = ({
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>{t('perDay')}:</span>
-                    <span className="font-bold">{currencySymbol} {convertPrice(selectedCar.PRICEPERDAY)}</span>
+                    <span className="font-bold">{currencySymbol} {convertPrice(car.price_per_day)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{t('perWeek')}:</span>
-                    <span className="font-bold">{currencySymbol} {convertPrice(selectedCar.priceperweek)}</span>
+                    <span className="font-bold">{currencySymbol} {convertPrice(car.price_per_week)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{t('perMonth')}:</span>
-                    <span className="font-bold">{currencySymbol} {convertPrice(selectedCar.pricepermonth)}</span>
+                    <span className="font-bold">{currencySymbol} {convertPrice(car.price_per_month)}</span>
                   </div>
                 </div>
               </div>
