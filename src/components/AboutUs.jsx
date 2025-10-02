@@ -1,6 +1,8 @@
 import React from 'react';
+import { useApp } from '../context/AppContext';
 
-const AboutUs = ({ language }) => {
+const AboutUs = () => {
+  const { language } = useApp();
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-12">
       <div className="container mx-auto px-4 max-w-4xl">

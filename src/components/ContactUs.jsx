@@ -1,19 +1,30 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { Loader2 } from "lucide-react";
 import { useTranslation } from "../utils/translations";
+import { useApp } from "../context/AppContext";
+import { getContactSchema } from "../utils/validationSchemas";
+import api from "../services/api";
 
-const ContactUs = ({ language }) => {
+const ContactUs = () => {
+  const { language } = useApp();
   const t = useTranslation(language);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    subject: "",
-    message: ""
-  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [visibleSections, setVisibleSections] = useState(new Set());
   const sectionRefs = useRef([]);
+
+  // React Hook Form with Yup validation
+  const {
+    register,
+    handleSubmit: handleFormSubmit,
+    formState: { errors },
+    reset
+  } = useForm({
+    resolver: yupResolver(getContactSchema(language)),
+    mode: "onChange" // Real-time validation
+  });
 
   // Disable scrolling when modal is open
   useEffect(() => {
@@ -60,75 +71,32 @@ const ContactUs = ({ language }) => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.email || !formData.message) {
-      alert(t("fillAllFields"));
-      return;
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      alert(language === 'ar' ? 'البريد الإلكتروني غير صالح' : 'Invalid email format');
-      return;
-    }
-
+  const onSubmit = async (formData) => {
     setIsSubmitting(true);
 
     try {
       // Import toast dynamically
       const { toast } = await import('react-toastify');
 
-      // Submit to backend
-      const response = await fetch('http://localhost:3001/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
+      // Submit using API service (with automatic retry)
+      await api.contact.send(formData);
+
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Show modal after a brief delay to allow scroll to complete
+      setTimeout(() => {
+        setShowSuccessModal(true);
+      }, 300);
+
+      // Reset form
+      reset();
+
+      toast.success(language === 'ar'
+        ? 'تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.'
+        : 'Your message has been sent successfully! We will contact you soon.', {
+        autoClose: 5000
       });
-
-      if (response.ok) {
-        // Scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        // Show modal after a brief delay to allow scroll to complete
-        setTimeout(() => {
-          setShowSuccessModal(true);
-        }, 300);
-
-        // Reset form
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          subject: "",
-          message: ""
-        });
-
-        toast.success(language === 'ar'
-          ? 'تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.'
-          : 'Your message has been sent successfully! We will contact you soon.', {
-          autoClose: 5000
-        });
-      } else {
-        const error = await response.json();
-        toast.error(language === 'ar'
-          ? `فشل إرسال الرسالة: ${error.error || 'خطأ غير معروف'}`
-          : `Failed to send message: ${error.error || 'Unknown error'}`, {
-          autoClose: 5000
-        });
-      }
     } catch (error) {
       const { toast } = await import('react-toastify');
       toast.error(language === 'ar'
@@ -171,7 +139,7 @@ const ContactUs = ({ language }) => {
               {t("sendMessage")}
             </h2>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleFormSubmit(onSubmit)} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -179,13 +147,15 @@ const ContactUs = ({ language }) => {
                   </label>
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    {...register("name")}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      errors.name ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder={t("enterName")}
-                    required
                   />
+                  {errors.name && (
+                    <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                  )}
                 </div>
 
                 <div>
@@ -194,43 +164,51 @@ const ContactUs = ({ language }) => {
                   </label>
                   <input
                     type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    {...register("email")}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      errors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder={t("enterEmail")}
-                    required
                   />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                  )}
                 </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t("phone")}
+                    {t("phone")} *
                   </label>
                   <input
                     type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    {...register("phone")}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      errors.phone ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder={t("enterPhone")}
                   />
+                  {errors.phone && (
+                    <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t("subject")}
+                    {t("subject")} *
                   </label>
                   <input
                     type="text"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    {...register("subject")}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      errors.subject ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder={t("enterSubject")}
                   />
+                  {errors.subject && (
+                    <p className="mt-1 text-sm text-red-600">{errors.subject.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -239,25 +217,28 @@ const ContactUs = ({ language }) => {
                   {t("message")} *
                 </label>
                 <textarea
-                  name="message"
-                  value={formData.message}
-                  onChange={handleInputChange}
+                  {...register("message")}
                   rows="6"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none ${
+                    errors.message ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder={t("enterMessage")}
-                  required
                 ></textarea>
+                {errors.message && (
+                  <p className="mt-1 text-sm text-red-600">{errors.message.message}</p>
+                )}
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`w-full py-4 px-6 rounded-lg font-semibold transition-all duration-300 ${
+                className={`w-full py-4 px-6 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
                   isSubmitting
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 transform hover:scale-105 active:scale-95"
                 } text-white shadow-lg`}
               >
+                {isSubmitting && <Loader2 className="h-5 w-5 animate-spin" />}
                 {isSubmitting ? t("sending") : t("sendMessage")}
               </button>
             </form>

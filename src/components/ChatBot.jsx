@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { MessageCircle, ArrowRight, ArrowLeft, X } from "lucide-react";
+import { useApp } from "../context/AppContext";
 
-const ChatBot = ({ language }) => {
+const ChatBot = () => {
+  const { language } = useApp();
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");

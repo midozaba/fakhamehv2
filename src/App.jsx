@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { HelmetProvider } from 'react-helmet-async';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "./index.css";
 import { useTranslation } from "./utils/translations";
+import { AppProvider, useApp } from "./context/AppContext";
+import api from "./services/api";
+import { initGA, trackPageView, trackBookingFunnel } from "./utils/analytics";
 import Header from "./components/Header";
 import HomePage from "./components/HomePage";
 import CarsPage from "./components/CarsPage";
@@ -16,108 +20,88 @@ import NotFound from "./components/NotFound";
 import Footer from "./components/Footer";
 import ChatBot from "./components/ChatBot";
 
-// Detect browser language
-const getBrowserLanguage = () => {
-  const browserLang = navigator.language || navigator.userLanguage;
-  if (browserLang.startsWith('ar')) {
-    return 'ar';
-  }
-  return 'en';
-};
-
-// Main App Layout Component (needs to be inside Router)
+// Main App Layout Component (needs to be inside Router and AppProvider)
 const AppLayout = () => {
-  const navigate = useNavigate();
   const location = useLocation();
-
-  const [language, setLanguage] = useState(getBrowserLanguage());
-  const [currency, setCurrency] = useState("JOD");
-  const [selectedCar, setSelectedCar] = useState(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [searchFilters, setSearchFilters] = useState({
-    category: "all",
-    priceRange: "all",
-  });
-  const [bookingData, setBookingData] = useState({
-    pickupDate: "",
-    returnDate: "",
-    days: 1,
-    insurance: "",
-    additionalServices: [],
-    customerInfo: {
-      name: "",
-      email: "",
-      phone: "",
-      license: "",
-    },
-  });
+  const navigate = useNavigate();
+  const {
+    language,
+    handleLanguageChange,
+    currency,
+    setCurrency,
+    selectedCar,
+    setSelectedCar,
+    bookingData,
+    setBookingData,
+    searchFilters,
+    setSearchFilters,
+    isTransitioning,
+    setIsSubmitting
+  } = useApp();
 
   const t = useTranslation(language);
 
-  // Scroll to top on route change
+  // Scroll to top on route change and track page views
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Track page view in Google Analytics
+    const pageTitle = {
+      '/': 'Home',
+      '/cars': 'Cars',
+      '/booking': 'Booking',
+      '/contact-us': 'Contact Us',
+      '/terms-of-service': 'Terms of Service',
+      '/about-us': 'About Us',
+      '/admin': 'Admin Dashboard'
+    }[location.pathname] || 'Page';
+
+    trackPageView(location.pathname, pageTitle);
   }, [location.pathname]);
 
-  // Smooth language change handler
-  const handleLanguageChange = (newLanguage) => {
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setLanguage(newLanguage);
-      setIsTransitioning(false);
-    }, 150);
-  };
-
   const handleBookingSubmit = async () => {
-    const { name, email, phone, license, street, city, country, idDocument, passportDocument } = bookingData.customerInfo;
+    const { name, email, phone, license, street, city, country, area, postalCode, idDocument, passportDocument } = bookingData.customerInfo;
 
-    // Validate required fields
-    if (
-      !name ||
-      !email ||
-      !phone ||
-      !license ||
-      !street ||
-      !city ||
-      !country ||
-      !bookingData.pickupDate ||
-      !bookingData.returnDate ||
-      !bookingData.insurance
-    ) {
-      alert(t("fillAllFields"));
-      return;
-    }
+    // Validate using Yup schema
+    try {
+      const { getBookingSchema } = await import('./utils/validationSchemas');
+      const schema = getBookingSchema(language);
 
-    // Validate documents
-    if (!idDocument || !passportDocument) {
-      alert(language === 'ar' ? 'يرجى تحميل المستندات المطلوبة' : 'Please upload required documents');
-      return;
-    }
+      // Prepare data for validation
+      const dataToValidate = {
+        name,
+        email,
+        phone,
+        license,
+        street,
+        city,
+        area: area || '',
+        postalCode: postalCode || '',
+        country,
+        pickupDate: bookingData.pickupDate,
+        returnDate: bookingData.returnDate,
+        insurance: bookingData.insurance,
+        idDocument,
+        passportDocument
+      };
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      alert(language === 'ar' ? 'البريد الإلكتروني غير صالح' : 'Invalid email format');
-      return;
-    }
+      await schema.validate(dataToValidate, { abortEarly: false });
+    } catch (validationError) {
+      // Import toast for error display
+      const { toast } = await import('react-toastify');
 
-    // Validate dates
-    const pickupDate = new Date(bookingData.pickupDate);
-    const returnDate = new Date(bookingData.returnDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (pickupDate < today) {
-      alert(language === 'ar' ? 'تاريخ الاستلام لا يمكن أن يكون في الماضي' : 'Pickup date cannot be in the past');
-      return;
-    }
-
-    if (returnDate <= pickupDate) {
-      alert(language === 'ar' ? 'تاريخ الإرجاع يجب أن يكون بعد تاريخ الاستلام' : 'Return date must be after pickup date');
+      if (validationError.inner && validationError.inner.length > 0) {
+        // Show first error
+        toast.error(validationError.inner[0].message, { autoClose: 5000 });
+      } else {
+        toast.error(validationError.message, { autoClose: 5000 });
+      }
       return;
     }
 
     try {
+      setIsSubmitting(true);
+
       // Import toast dynamically
       const { toast } = await import('react-toastify');
 
@@ -159,57 +143,65 @@ const AppLayout = () => {
         toastId: 'booking-loading'
       });
 
-      // Submit to backend
-      const response = await fetch('http://localhost:3001/api/bookings', {
-        method: 'POST',
-        body: formData
-      });
+      // Track booking submission
+      trackBookingFunnel.submitBooking(
+        pricing.total,
+        `${selectedCar.car_barnd} ${selectedCar.car_type}`,
+        bookingData.days
+      );
+
+      // Submit using API service (with automatic retry)
+      const result = await api.bookings.create(formData);
 
       // Close loading toast
       toast.dismiss('booking-loading');
 
-      if (response.ok) {
-        const result = await response.json();
-        toast.success(language === 'ar'
-          ? 'تم إرسال الحجز بنجاح! سنتواصل معك قريباً.'
-          : 'Booking submitted successfully! We will contact you shortly.', {
-          autoClose: 5000
-        });
+      // Track booking success
+      const bookingId = result?.id || Date.now();
+      trackBookingFunnel.bookingSuccess(
+        pricing.total,
+        `${selectedCar.car_barnd} ${selectedCar.car_type}`,
+        bookingId
+      );
 
-        // Reset and navigate
-        setTimeout(() => {
-          navigate("/");
-          setSelectedCar(null);
-          setBookingData({
-            pickupDate: "",
-            returnDate: "",
-            days: 1,
-            insurance: "",
-            additionalServices: [],
-            customerInfo: {
-              name: "",
-              email: "",
-              phone: "",
-              license: "",
-            },
-          });
-        }, 2000);
-      } else {
-        const error = await response.json();
-        toast.error(language === 'ar'
-          ? `فشل إرسال الحجز: ${error.error || 'خطأ غير معروف'}`
-          : `Failed to submit booking: ${error.error || 'Unknown error'}`, {
-          autoClose: 5000
+      toast.success(language === 'ar'
+        ? 'تم إرسال الحجز بنجاح! سنتواصل معك قريباً.'
+        : 'Booking submitted successfully! We will contact you shortly.', {
+        autoClose: 5000
+      });
+
+      // Reset and navigate
+      setTimeout(() => {
+        navigate("/");
+        setSelectedCar(null);
+        setBookingData({
+          pickupDate: "",
+          returnDate: "",
+          days: 1,
+          insurance: "",
+          additionalServices: [],
+          customerInfo: {
+            name: "",
+            email: "",
+            phone: "",
+            license: "",
+          },
         });
-      }
+      }, 2000);
     } catch (error) {
       const { toast } = await import('react-toastify');
       toast.dismiss('booking-loading');
+
+      // Track booking failure
+      trackBookingFunnel.bookingFailed(error.message);
+
       toast.error(language === 'ar'
         ? `خطأ في الاتصال: ${error.message}`
         : `Connection error: ${error.message}`, {
         autoClose: 5000
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -218,14 +210,7 @@ const AppLayout = () => {
       className="min-h-screen bg-gray-50"
       dir={language === "ar" ? "rtl" : "ltr"}
     >
-      {location.pathname !== '/admin' && (
-        <Header
-          language={language}
-          setLanguage={handleLanguageChange}
-          currency={currency}
-          setCurrency={setCurrency}
-        />
-      )}
+      {location.pathname !== '/admin' && <Header />}
 
       <main className="relative overflow-hidden">
         <div
@@ -238,65 +223,42 @@ const AppLayout = () => {
           <Routes>
             <Route
               path="/"
-              element={
-                <HomePage
-                  language={language}
-                  setSelectedCar={setSelectedCar}
-                  currency={currency}
-                />
-              }
+              element={<HomePage />}
             />
             <Route
               path="/cars"
-              element={
-                <CarsPage
-                  language={language}
-                  searchFilters={searchFilters}
-                  setSearchFilters={setSearchFilters}
-                  setSelectedCar={setSelectedCar}
-                  currency={currency}
-                />
-              }
+              element={<CarsPage />}
             />
             <Route
               path="/booking/:carId?"
-              element={
-                <BookingPage
-                  language={language}
-                  selectedCar={selectedCar}
-                  bookingData={bookingData}
-                  setBookingData={setBookingData}
-                  handleBookingSubmit={handleBookingSubmit}
-                  currency={currency}
-                />
-              }
+              element={<BookingPage handleBookingSubmit={handleBookingSubmit} />}
             />
             <Route
               path="/contact-us"
-              element={<ContactUs language={language} />}
+              element={<ContactUs />}
             />
             <Route
               path="/terms-of-service"
-              element={<TermsOfService language={language} />}
+              element={<TermsOfService />}
             />
             <Route
               path="/about-us"
-              element={<AboutUs language={language} />}
+              element={<AboutUs />}
             />
             <Route
               path="/admin"
-              element={<AdminPage language={language} />}
+              element={<AdminPage />}
             />
             <Route
               path="*"
-              element={<NotFound language={language} />}
+              element={<NotFound />}
             />
           </Routes>
         </div>
       </main>
 
-      {location.pathname !== '/admin' && <Footer language={language} />}
-      {location.pathname !== '/admin' && <ChatBot language={language} />}
+      {location.pathname !== '/admin' && <Footer />}
+      {location.pathname !== '/admin' && <ChatBot />}
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -314,10 +276,19 @@ const AppLayout = () => {
 };
 
 const App = () => {
+  // Initialize Google Analytics on app mount
+  useEffect(() => {
+    initGA();
+  }, []);
+
   return (
-    <Router>
-      <AppLayout />
-    </Router>
+    <HelmetProvider>
+      <Router>
+        <AppProvider>
+          <AppLayout />
+        </AppProvider>
+      </Router>
+    </HelmetProvider>
   );
 };
 

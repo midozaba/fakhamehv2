@@ -60,7 +60,7 @@ const AdminPage = () => {
       setLoading(true);
       const response = await getAdminStats();
       if (response.success) {
-        setStats(response.stats);
+        setStats(response.data);
       }
     } catch (error) {
       toast.error('Failed to load statistics');

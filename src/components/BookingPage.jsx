@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Users, Fuel, Shield, Star, Phone, Wifi, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users, Fuel, Shield, Star, Phone, Wifi, MapPin, Loader2 } from 'lucide-react';
 import { useTranslation } from '../utils/translations';
+import { useApp } from '../context/AppContext';
 import { getCarImage, calculatePrice } from '../utils/carHelpers';
 
-const BookingPage = ({
-  language = 'en',
-  selectedCar = null,
-  bookingData = {},
-  setBookingData = () => {},
-  handleBookingSubmit = () => {},
-  currency = 'JOD'
-}) => {
+const BookingPage = ({ handleBookingSubmit = () => {} }) => {
   const navigate = useNavigate();
   const { carId } = useParams();
+  const { language, selectedCar, bookingData, setBookingData, currency, isSubmitting } = useApp();
   const t = useTranslation(language);
   const [car, setCar] = useState(selectedCar);
   const [loading, setLoading] = useState(!selectedCar && carId);
@@ -566,9 +561,11 @@ const BookingPage = ({
 
               <button
                 onClick={handleBookingSubmit}
-                className="w-full bg-gradient-to-r from-blue-900 to-slate-600 text-white py-4 rounded-lg text-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105"
+                disabled={isSubmitting}
+                className="w-full bg-gradient-to-r from-blue-900 to-slate-600 text-white py-4 rounded-lg text-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
               >
-                {t('confirmBooking')}
+                {isSubmitting && <Loader2 className="h-5 w-5 animate-spin" />}
+                {isSubmitting ? (language === 'ar' ? 'جاري الإرسال...' : 'Submitting...') : t('confirmBooking')}
               </button>
             </div>
           </div>

@@ -1,10 +1,12 @@
 import React from 'react';
 import { Phone, Mail, MapPin } from 'lucide-react';
 import { useTranslation } from '../utils/translations';
+import { useApp } from '../context/AppContext';
 import logo from '../assets/FakhamehLogo.png';
 import logoText from '../assets/Untitled_design-removebg-preview.png';
 
-const Footer = ({ language }) => {
+const Footer = () => {
+  const { language } = useApp();
   const t = useTranslation(language);
 
   return (

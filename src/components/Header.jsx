@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useTranslation } from "../utils/translations";
+import { useApp } from "../context/AppContext";
 import logo from '../assets/FakhamehLogo.png';
 import logoText from '../assets/fakhamehtext.png';
 
-const Header = ({ language, setLanguage, currency, setCurrency }) => {
+const Header = () => {
   const location = useLocation();
   const currentPage = location.pathname;
+  const { language, handleLanguageChange, currency, setCurrency } = useApp();
   const t = useTranslation(language);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -107,7 +109,7 @@ const Header = ({ language, setLanguage, currency, setCurrency }) => {
               {currency}
             </button>
             <button
-              onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
+              onClick={() => handleLanguageChange(language === "ar" ? "en" : "ar")}
               className="hidden md:block bg-gradient-to-r from-slate-400 to-blue-900 text-white px-2 py-0.5 text-[10px] rounded hover:opacity-90 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
             >
               {language === "ar" ? "English" : "العربية"}
@@ -195,7 +197,7 @@ const Header = ({ language, setLanguage, currency, setCurrency }) => {
                   {currency}
                 </button>
                 <button
-                  onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
+                  onClick={() => handleLanguageChange(language === "ar" ? "en" : "ar")}
                   className="flex-1 bg-gradient-to-r from-slate-400 to-blue-900 text-white px-4 py-2 text-sm rounded hover:opacity-90 transition-all duration-300 ease-in-out"
                 >
                   {language === "ar" ? "English" : "العربية"}

@@ -1,0 +1,15 @@
+# robots.txt for Al-Fakhama Car Rental
+
+# Allow all search engines
+User-agent: *
+Allow: /
+
+# Disallow admin pages
+Disallow: /admin
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://alfakhama.com/sitemap.xml
+
+# Crawl delay (optional, adjust if needed)
+Crawl-delay: 1

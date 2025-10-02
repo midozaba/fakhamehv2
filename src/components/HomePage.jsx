@@ -2,19 +2,27 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Car, Shield, Clock, Award, Users, MapPin, Phone, Mail, Star, CheckCircle, Zap, Heart } from 'lucide-react';
 import { useTranslation } from '../utils/translations';
+import { useApp } from '../context/AppContext';
 import { getCarImage } from '../utils/carHelpers';
-import { fetchCars } from '../services/carsApi';
+import { getErrorMessage, isNetworkError } from '../utils/apiHelpers';
+import { CarCardSkeletonGrid } from './common/CarCardSkeleton';
+import ErrorMessage from './common/ErrorMessage';
+import SEO from './common/SEO';
+import { getOrganizationSchema, getWebsiteSchema, getCarRentalServiceSchema } from '../utils/structuredData';
 import storePic from '../assets/store pic.jpg';
 import { toast } from 'react-toastify';
+import api from '../services/api';
 
-const HomePage = ({ language, setSelectedCar, currency }) => {
+const HomePage = () => {
   const navigate = useNavigate();
+  const { language, setSelectedCar, currency } = useApp();
   const t = useTranslation(language);
   const [visibleSections, setVisibleSections] = useState(new Set());
   const sectionRefs = useRef([]);
   const [featuredCars, setFeaturedCars] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedRating, setSelectedRating] = useState(0);
 
   // Conversion rate: 1 JOD = 1.41 USD
@@ -25,29 +33,35 @@ const HomePage = ({ language, setSelectedCar, currency }) => {
   const currencySymbol = currency === "USD" ? "$" : "JOD";
 
   // Fetch featured cars and reviews from API
-  useEffect(() => {
-    const loadData = async () => {
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch cars using API service (with automatic retry and caching)
+      const carsData = await api.cars.getAll();
+      const shuffled = [...carsData].sort(() => 0.5 - Math.random());
+      setFeaturedCars(shuffled.slice(0, 6));
+
+      // Fetch reviews (if endpoint exists)
       try {
-        setLoading(true);
-        // Fetch cars
-        const carsData = await fetchCars();
-        const shuffled = [...carsData].sort(() => 0.5 - Math.random());
-        setFeaturedCars(shuffled.slice(0, 6));
-
-        // Fetch reviews
-        const reviewsResponse = await fetch('/api/reviews');
-        if (reviewsResponse.ok) {
-          const reviewsData = await reviewsResponse.json();
-          setReviews(reviewsData.slice(0, 6)); // Show up to 6 reviews
-        }
-      } catch (error) {
-        console.error('Error loading data:', error);
-        toast.error('Failed to load data');
-      } finally {
-        setLoading(false);
+        const reviewsData = await api.client.get('/reviews');
+        setReviews(reviewsData.data.slice(0, 6));
+      } catch (reviewErr) {
+        // Reviews are optional, don't fail the whole page
+        console.log('Reviews not available');
       }
-    };
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError(err);
+      const errorMsg = getErrorMessage(err, language);
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadData();
   }, []);
 
@@ -81,8 +95,26 @@ const HomePage = ({ language, setSelectedCar, currency }) => {
     }
   };
 
+  // Structured data for homepage
+  const structuredData = [
+    getOrganizationSchema(),
+    getWebsiteSchema(),
+    getCarRentalServiceSchema()
+  ];
+
   return (
     <div className={language === 'ar' ? 'rtl' : 'ltr'}>
+      <SEO
+        title={language === 'ar' ? 'الفخامة لتأجير السيارات - أفضل خدمة تأجير سيارات في الأردن' : 'Al-Fakhama Car Rental - Premium Car Rental in Jordan'}
+        description={language === 'ar'
+          ? 'تأجير سيارات فاخرة واقتصادية في الأردن. أسعار تنافسية، دعم على مدار الساعة، وتوصيل مجاني للمطار.'
+          : 'Rent luxury, SUV, and economy cars in Jordan. Competitive rates, 24/7 support, and free airport delivery. Book your car today!'
+        }
+        keywords="car rental Jordan, rent a car Amman, luxury car rental, SUV rental Jordan, economy car rental, airport car rental, تأجير سيارات الأردن, تأجير سيارات عمان"
+        ogType="website"
+        structuredData={structuredData}
+        lang={language}
+      />
       <section className="relative bg-gradient-to-br from-blue-900 via-slate-700 to-slate-600 text-white">
         <div className="relative h-[500px] md:h-[600px]">
           <img
@@ -169,9 +201,16 @@ const HomePage = ({ language, setSelectedCar, currency }) => {
           </div>
 
           {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
-              <p className="mt-4 text-gray-600">{language === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p>
+            <CarCardSkeletonGrid count={3} />
+          ) : error ? (
+            <ErrorMessage
+              message={getErrorMessage(error, language)}
+              type={isNetworkError(error) ? 'network' : 'error'}
+              onRetry={loadData}
+            />
+          ) : featuredCars.length === 0 ? (
+            <div className="text-center py-12 text-gray-600">
+              {language === 'ar' ? 'لا توجد سيارات متاحة' : 'No cars available'}
             </div>
           ) : (
             <div className="grid md:grid-cols-3 gap-8">

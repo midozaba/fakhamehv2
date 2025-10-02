@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../utils/translations';
+import { useApp } from '../context/AppContext';
 
-const NotFound = ({ language }) => {
+const NotFound = () => {
+  const { language } = useApp();
   const t = useTranslation(language);
 
   return (

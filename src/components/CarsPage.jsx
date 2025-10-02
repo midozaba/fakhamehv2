@@ -1,17 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../utils/translations';
+import { useApp } from '../context/AppContext';
 import { getCarImage, categorizeCarType } from '../utils/carHelpers';
-import { fetchCars } from '../services/carsApi';
+import { getErrorMessage, isNetworkError } from '../utils/apiHelpers';
+import { CarCardSkeletonGrid } from './common/CarCardSkeleton';
+import ErrorMessage from './common/ErrorMessage';
 import { toast } from 'react-toastify';
+import api from '../services/api';
 
-const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, currency }) => {
+const CarsPage = () => {
   const navigate = useNavigate();
+  const { language, searchFilters, setSearchFilters, setSelectedCar, currency } = useApp();
   const t = useTranslation(language);
   const [visibleCards, setVisibleCards] = useState(new Set());
   const cardRefs = useRef([]);
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Conversion rate: 1 JOD = 1.41 USD
   const convertPrice = (priceJOD) => {
@@ -21,20 +27,24 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, c
   const currencySymbol = currency === "USD" ? "$" : "JOD";
 
   // Fetch cars from database on component mount
-  useEffect(() => {
-    const loadCars = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchCars();
-        setCars(data);
-      } catch (error) {
-        toast.error('Failed to load cars');
-        console.error('Error loading cars:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadCars = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      // Use API service with automatic retry and caching
+      const data = await api.cars.getAll();
+      setCars(data);
+    } catch (err) {
+      setError(err);
+      const errorMsg = getErrorMessage(err, language);
+      toast.error(errorMsg);
+      console.error('Error loading cars:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadCars();
   }, []);
 
@@ -130,8 +140,17 @@ const CarsPage = ({ language, searchFilters, setSearchFilters, setSelectedCar, c
         </div>
 
         {loading ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600">Loading cars...</p>
+          <CarCardSkeletonGrid count={6} />
+        ) : error ? (
+          <ErrorMessage
+            message={getErrorMessage(error, language)}
+            type={isNetworkError(error) ? 'network' : 'error'}
+            onRetry={loadCars}
+          />
+        ) : filteredCars.length === 0 ? (
+          <div className="text-center py-12 text-gray-600">
+            <p className="text-lg">{language === 'ar' ? 'لم يتم العثور على سيارات' : 'No cars found'}</p>
+            <p className="text-sm mt-2">{language === 'ar' ? 'حاول تغيير معايير البحث' : 'Try changing the search filters'}</p>
           </div>
         ) : (
           <>

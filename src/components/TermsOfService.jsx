@@ -1,7 +1,9 @@
 import React from "react";
 import { useTranslation } from "../utils/translations";
+import { useApp } from "../context/AppContext";
 
-const TermsOfService = ({ language }) => {
+const TermsOfService = () => {
+  const { language } = useApp();
   const t = useTranslation(language);
 
   return (
