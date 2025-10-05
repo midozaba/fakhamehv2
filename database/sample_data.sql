@@ -1,17 +1,18 @@
 USE alfakhama_rental;
 
+-- Insert Cars
 INSERT INTO cars (car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url) VALUES
 ('Toyota', 'Camry', 2024, 1001, 45.00, 280.00, 1100.00, 'White', 15000, 'available', 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb'),
-('Honda', 'Accord', 2023, 1002, 42.00, 260.00, 1000.00, 'Black', 22000, 'available', 'https://images.unsplash.com/photo-1590362891991-f776e747a588'),
+('Honda', 'Accord', 2023, 1002, 42.00, 260.00, 1000.00, 'Black', 22000, 'rented', 'https://images.unsplash.com/photo-1590362891991-f776e747a588'),
 ('Toyota', 'Corolla', 2024, 1003, 35.00, 220.00, 850.00, 'Silver', 10000, 'available', 'https://images.unsplash.com/photo-1623869675781-80aa31012a5a'),
 ('Nissan', 'Altima', 2023, 1004, 40.00, 250.00, 950.00, 'Blue', 18000, 'available', 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a'),
-('Hyundai', 'Elantra', 2024, 1005, 38.00, 240.00, 900.00, 'Red', 12000, 'available', 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8'),
+('Hyundai', 'Elantra', 2024, 1005, 38.00, 240.00, 900.00, 'Red', 12000, 'rented', 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8'),
 ('Mazda', 'Mazda3', 2023, 1006, 41.00, 255.00, 980.00, 'Gray', 20000, 'available', 'https://images.unsplash.com/photo-1617531653332-bd46c24f2068'),
 ('Chevrolet', 'Malibu', 2024, 1007, 43.00, 270.00, 1050.00, 'White', 14000, 'available', 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d'),
-('Ford', 'Fusion', 2023, 1008, 44.00, 275.00, 1075.00, 'Black', 25000, 'available', 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf'),
+('Ford', 'Fusion', 2023, 1008, 44.00, 275.00, 1075.00, 'Black', 25000, 'maintenance', 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf'),
 ('Kia', 'Optima', 2024, 1009, 39.00, 245.00, 920.00, 'Silver', 11000, 'available', 'https://images.unsplash.com/photo-1580273916550-e323be2ae537'),
 ('Volkswagen', 'Jetta', 2023, 1010, 46.00, 285.00, 1120.00, 'Blue', 19000, 'available', 'https://images.unsplash.com/photo-1619976215249-57a9449dc28d'),
-('BMW', '3 Series', 2024, 1011, 75.00, 480.00, 1900.00, 'Black', 8000, 'available', 'https://images.unsplash.com/photo-1555215695-3004980ad54e'),
+('BMW', '3 Series', 2024, 1011, 75.00, 480.00, 1900.00, 'Black', 8000, 'rented', 'https://images.unsplash.com/photo-1555215695-3004980ad54e'),
 ('Mercedes-Benz', 'C-Class', 2023, 1012, 80.00, 510.00, 2000.00, 'White', 12000, 'available', 'https://images.unsplash.com/photo-1618843479619-f3d0d3e8b99f'),
 ('Audi', 'A4', 2024, 1013, 78.00, 500.00, 1950.00, 'Gray', 9000, 'available', 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6'),
 ('Lexus', 'ES', 2023, 1014, 70.00, 450.00, 1800.00, 'Silver', 15000, 'available', 'https://images.unsplash.com/photo-1627454820516-d5e246419310'),
@@ -51,3 +52,70 @@ INSERT INTO cars (car_barnd, car_type, car_model, car_num, price_per_day, price_
 ('Tesla', 'Model 3', 2024, 1048, 85.00, 545.00, 2120.00, 'White', 5000, 'available', 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d'),
 ('Tesla', 'Model Y', 2023, 1049, 90.00, 575.00, 2250.00, 'Black', 8000, 'available', 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf'),
 ('Chevrolet', 'Bolt EV', 2024, 1050, 48.00, 310.00, 1200.00, 'Blue', 6000, 'available', 'https://images.unsplash.com/photo-1580273916550-e323be2ae537');
+
+-- Insert Customers
+INSERT INTO customers (full_name, email, phone, address, driver_license) VALUES
+('Ahmad Hassan', 'ahmad.hassan@email.com', '+961 70 123456', 'Beirut, Lebanon', 'DL123456'),
+('Sara Khalil', 'sara.khalil@email.com', '+961 71 234567', 'Tripoli, Lebanon', 'DL234567'),
+('Mohamed Ali', 'mohamed.ali@email.com', '+961 76 345678', 'Sidon, Lebanon', 'DL345678'),
+('Fatima Youssef', 'fatima.youssef@email.com', '+961 3 456789', 'Tyre, Lebanon', 'DL456789'),
+('Omar Khoury', 'omar.khoury@email.com', '+961 70 567890', 'Byblos, Lebanon', 'DL567890'),
+('Layla Mansour', 'layla.mansour@email.com', '+961 71 678901', 'Zahle, Lebanon', 'DL678901'),
+('Hassan Hamdan', 'hassan.hamdan@email.com', '+961 76 789012', 'Baalbek, Lebanon', 'DL789012'),
+('Nour Saleh', 'nour.saleh@email.com', '+961 3 890123', 'Jounieh, Lebanon', 'DL890123'),
+('Karim Farah', 'karim.farah@email.com', '+961 70 901234', 'Nabatieh, Lebanon', 'DL901234'),
+('Rima Saad', 'rima.saad@email.com', '+961 71 012345', 'Batroun, Lebanon', 'DL012345'),
+('Bilal Karami', 'bilal.karami@email.com', '+961 76 123450', 'Bekaa Valley, Lebanon', 'DL123450'),
+('Maya Haddad', 'maya.haddad@email.com', '+961 3 234561', 'Jbeil, Lebanon', 'DL234561'),
+('Wassim Ghanem', 'wassim.ghanem@email.com', '+961 70 345672', 'Metn, Lebanon', 'DL345672'),
+('Lina Abdallah', 'lina.abdallah@email.com', '+961 71 456783', 'Kesrouan, Lebanon', 'DL456783'),
+('Fadi Nassar', 'fadi.nassar@email.com', '+961 76 567894', 'Baabda, Lebanon', 'DL567894');
+
+-- Insert Rentals
+INSERT INTO rentals (car_id, customer_id, rental_start, rental_end, rental_type, total_price, status, insurance_type, additional_services, id_document, passport_document) VALUES
+(2, 1, '2025-01-15', '2025-01-22', 'weekly', 260.00, 'active', 'Full Coverage', 'GPS Navigation, Child Seat', 'ID_Ahmad_001.pdf', 'PASS_Ahmad_001.pdf'),
+(5, 2, '2025-02-01', '2025-02-08', 'weekly', 240.00, 'active', 'Basic', 'GPS Navigation', 'ID_Sara_002.pdf', 'PASS_Sara_002.pdf'),
+(11, 3, '2025-01-20', '2025-01-25', 'daily', 375.00, 'active', 'Premium', 'GPS Navigation, Additional Driver', 'ID_Mohamed_003.pdf', 'PASS_Mohamed_003.pdf'),
+(1, 4, '2024-12-10', '2024-12-17', 'weekly', 280.00, 'completed', 'Full Coverage', 'GPS Navigation', 'ID_Fatima_004.pdf', 'PASS_Fatima_004.pdf'),
+(3, 5, '2024-11-15', '2024-11-22', 'weekly', 220.00, 'completed', 'Basic', NULL, 'ID_Omar_005.pdf', 'PASS_Omar_005.pdf'),
+(12, 6, '2025-01-10', '2025-02-10', 'monthly', 2000.00, 'pending', 'Premium', 'GPS Navigation, WiFi Hotspot', 'ID_Layla_006.pdf', 'PASS_Layla_006.pdf'),
+(15, 7, '2024-10-05', '2024-10-10', 'daily', 325.00, 'completed', 'Full Coverage', 'Additional Driver', 'ID_Hassan_007.pdf', NULL),
+(22, 8, '2025-02-15', '2025-02-22', 'weekly', 360.00, 'pending', 'Basic', 'GPS Navigation', 'ID_Nour_008.pdf', 'PASS_Nour_008.pdf'),
+(31, 9, '2024-12-20', '2024-12-25', 'daily', 425.00, 'completed', 'Premium', 'GPS Navigation, Child Seat, WiFi', 'ID_Karim_009.pdf', 'PASS_Karim_009.pdf'),
+(37, 10, '2025-01-25', '2025-02-01', 'weekly', 770.00, 'active', 'Premium', 'All Services Package', 'ID_Rima_010.pdf', 'PASS_Rima_010.pdf'),
+(48, 11, '2024-09-10', '2024-09-13', 'daily', 255.00, 'completed', 'Full Coverage', 'GPS Navigation', 'ID_Bilal_011.pdf', NULL),
+(1, 12, '2025-03-01', '2025-03-08', 'weekly', 280.00, 'pending', 'Basic', NULL, 'ID_Maya_012.pdf', 'PASS_Maya_012.pdf'),
+(3, 13, '2024-08-15', '2024-08-20', 'daily', 175.00, 'completed', 'Full Coverage', 'GPS Navigation', 'ID_Wassim_013.pdf', 'PASS_Wassim_013.pdf'),
+(21, 14, '2025-02-10', '2025-02-17', 'weekly', 350.00, 'pending', 'Premium', 'GPS Navigation, Child Seat', 'ID_Lina_014.pdf', NULL),
+(32, 15, '2024-11-01', '2024-11-08', 'weekly', 575.00, 'completed', 'Full Coverage', 'All Services Package', 'ID_Fadi_015.pdf', 'PASS_Fadi_015.pdf');
+
+-- Insert Contact Messages
+INSERT INTO contact_messages (name, email, message) VALUES
+('Hadi Jaber', 'hadi.jaber@email.com', 'I would like to inquire about long-term rental options for corporate use. Do you offer special rates for businesses?'),
+('Sana Sleiman', 'sana.sleiman@email.com', 'What are your policies regarding cross-border travel? I need to drive to Syria for business.'),
+('Marwan Harb', 'marwan.harb@email.com', 'Is it possible to rent a car with a driver? I will be visiting Lebanon for tourism and need transportation services.'),
+('Zeina Bakri', 'zeina.bakri@email.com', 'I had a wonderful experience renting from you last month. The service was excellent and the car was in perfect condition!'),
+('Tarek Moussa', 'tarek.moussa@email.com', 'Do you provide airport pickup and drop-off services? I am arriving at Beirut Airport next week.'),
+('Dina Fares', 'dina.fares@email.com', 'Can I add an additional driver to my rental? What would be the extra cost?'),
+('Youssef Amin', 'youssef.amin@email.com', 'I need to extend my current rental for 3 more days. How can I arrange this?'),
+('Rana Karam', 'rana.karam@email.com', 'What documents are required for international tourists to rent a car in Lebanon?'),
+('Elias Daher', 'elias.daher@email.com', 'Is there a discount for renting multiple cars for a wedding event?'),
+('Nadia Wehbe', 'nadia.wehbe@email.com', 'I want to report excellent service from your staff. They were very professional and helpful!');
+
+-- Insert Reviews
+INSERT INTO reviews (customer_name, rating, comment, is_featured, status) VALUES
+('Ahmad Hassan', 5, 'Excellent service! The car was clean, well-maintained, and the staff was very professional. I highly recommend Al-Fakhama for anyone looking for reliable car rental in Lebanon.', TRUE, 'approved'),
+('Sara Khalil', 4, 'Great experience overall. The booking process was easy and the car was ready on time. Only minor issue was the GPS wasn''t updated, but everything else was perfect.', TRUE, 'approved'),
+('Mohamed Ali', 5, 'Outstanding! I rented a BMW 3 Series and it was in pristine condition. The team went above and beyond to ensure I had everything I needed. Will definitely rent again!', TRUE, 'approved'),
+('Fatima Youssef', 5, 'Best car rental experience I''ve had in Lebanon. Fair prices, excellent customer service, and top-quality vehicles. Highly recommended!', TRUE, 'approved'),
+('Omar Khoury', 4, 'Very satisfied with the service. The car was comfortable and fuel-efficient. Pickup and drop-off were hassle-free. Good value for money.', FALSE, 'approved'),
+('Layla Mansour', 5, 'Professional service from start to finish. The staff explained all the terms clearly and there were no hidden charges. The Mercedes was a dream to drive!', TRUE, 'approved'),
+('Hassan Hamdan', 3, 'Decent service but the car had some minor scratches that weren''t documented. They fixed it quickly but it caused some initial concern.', FALSE, 'approved'),
+('Nour Saleh', 5, 'Fantastic! Rented for a week-long trip around Lebanon. The car performed flawlessly and customer service was responsive to all my questions.', TRUE, 'approved'),
+('Karim Farah', 4, 'Good selection of cars and competitive prices. The rental process was smooth and efficient. Would recommend to friends and family.', FALSE, 'approved'),
+('Rima Saad', 5, 'Exceptional service! I needed a car on short notice and they accommodated me perfectly. The Porsche Macan was absolutely amazing!', TRUE, 'approved'),
+('Bilal Karami', 4, 'Reliable and trustworthy company. Transparent pricing and no surprises. The car was exactly as described online.', FALSE, 'approved'),
+('Maya Haddad', 5, 'Love this company! Always my first choice for car rentals in Lebanon. Consistent quality and excellent customer care.', TRUE, 'approved'),
+('Wassim Ghanem', 2, 'The car was fine but I had issues with the return process. Had to wait too long for inspection. Needs improvement.', FALSE, 'pending'),
+('Lina Abdallah', 4, 'Pleasant experience. The car was clean and comfortable. Staff was friendly and helpful throughout the rental period.', FALSE, 'approved'),
+('Fadi Nassar', 5, 'Perfect service for business travel. The Mercedes GLC was luxurious and professional. Will use again for all future trips!', TRUE, 'approved');
