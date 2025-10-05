@@ -50,7 +50,10 @@ const CarsPage = () => {
 
   const filteredCars = cars.filter(car => {
     if (searchFilters.category !== 'all') {
-      const category = categorizeCarType(car.car_type);
+      // Use car_category from database if available, otherwise fallback to categorizeCarType
+      const category = car.car_category
+        ? car.car_category.toLowerCase()
+        : categorizeCarType(car.car_type);
       if (category !== searchFilters.category) return false;
     }
     if (searchFilters.priceRange !== 'all') {
@@ -114,11 +117,14 @@ const CarsPage = () => {
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">{language === 'ar' ? 'جميع الفئات' : 'All Categories'}</option>
-                <option value="economy">{t('economy')}</option>
                 <option value="sedan">{t('sedan')}</option>
                 <option value="suv">{t('suv')}</option>
+                <option value="truck">{language === 'ar' ? 'شاحنة' : 'Truck'}</option>
                 <option value="van">{t('van')}</option>
                 <option value="luxury">{t('luxury')}</option>
+                <option value="sports">{language === 'ar' ? 'رياضية' : 'Sports'}</option>
+                <option value="economy">{t('economy')}</option>
+                <option value="compact">{language === 'ar' ? 'صغيرة' : 'Compact'}</option>
               </select>
             </div>
             <div>
@@ -189,7 +195,7 @@ const CarsPage = () => {
                       <div className="text-xs text-gray-200 mb-2 space-y-0.5 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-100">
                         <p>{t('model')}: {car.car_model}</p>
                         <p>{t('color')}: {t(car.car_color)}</p>
-                        <p>Category: {t(categorizeCarType(car.car_type))}</p>
+                        <p>Category: {car.car_category || t(categorizeCarType(car.car_type))}</p>
                       </div>
                       <div className="mb-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-150">
                         <div className="text-xl font-bold text-white">

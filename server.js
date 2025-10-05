@@ -394,11 +394,11 @@ app.delete('/api/cars/:id', async (req, res) => {
 // Create/Update car (admin endpoint)
 app.post('/api/cars', async (req, res) => {
   try {
-    const { car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url } = req.body;
+    const { car_barnd, car_type, car_model, car_num, car_category, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url } = req.body;
 
     const [result] = await promisePool.query(
-      'INSERT INTO cars (car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status || 'available', image_url]
+      'INSERT INTO cars (car_barnd, car_type, car_model, car_num, car_category, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [car_barnd, car_type, car_model, car_num, car_category, price_per_day, price_per_week, price_per_month, car_color, mileage, status || 'available', image_url]
     );
 
     res.status(201).json({ success: true, message: 'Car created successfully', id: result.insertId });
@@ -411,11 +411,11 @@ app.post('/api/cars', async (req, res) => {
 // Update car (bardo admin endpoint)
 app.put('/api/cars/:id', async (req, res) => {
   try {
-    const { car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url } = req.body;
+    const { car_barnd, car_type, car_model, car_num, car_category, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url } = req.body;
 
     const [result] = await promisePool.query(
-      'UPDATE cars SET car_barnd = ?, car_type = ?, car_model = ?, car_num = ?, price_per_day = ?, price_per_week = ?, price_per_month = ?, car_color = ?, mileage = ?, status = ?, image_url = ? WHERE id = ?',
-      [car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url, req.params.id]
+      'UPDATE cars SET car_barnd = ?, car_type = ?, car_model = ?, car_num = ?, car_category = ?, price_per_day = ?, price_per_week = ?, price_per_month = ?, car_color = ?, mileage = ?, status = ?, image_url = ? WHERE id = ?',
+      [car_barnd, car_type, car_model, car_num, car_category, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url, req.params.id]
     );
 
     if (result.affectedRows === 0) {

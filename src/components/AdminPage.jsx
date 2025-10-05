@@ -38,6 +38,7 @@ const AdminPage = () => {
     car_type: '',
     car_model: new Date().getFullYear(),
     car_num: '',
+    car_category: '',
     price_per_day: '',
     price_per_week: '',
     price_per_month: '',
@@ -211,6 +212,7 @@ const AdminPage = () => {
       car_type: '',
       car_model: new Date().getFullYear(),
       car_num: '',
+      car_category: '',
       price_per_day: '',
       price_per_week: '',
       price_per_month: '',
@@ -230,6 +232,7 @@ const AdminPage = () => {
       car_type: car.car_type,
       car_model: car.car_model,
       car_num: car.car_num,
+      car_category: car.car_category || '',
       price_per_day: car.price_per_day,
       price_per_week: car.price_per_week,
       price_per_month: car.price_per_month,
@@ -1003,8 +1006,16 @@ const AdminPage = () => {
 
       {/* Document Viewer Modal */}
       {viewingDocuments && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 flex items-start justify-center z-50 p-4 pt-8 overflow-y-auto"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setViewingDocuments(null);
+            }
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
             <div className="p-6 border-b flex justify-between items-center">
               <h3 className="text-2xl font-bold">Customer Documents</h3>
               <button
@@ -1015,42 +1026,83 @@ const AdminPage = () => {
               </button>
             </div>
             <div className="p-6">
+              <div className="mb-4 bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-700 mb-2">Booking Information</h4>
+                <p><strong>Customer:</strong> {viewingDocuments.customer_name}</p>
+                <p><strong>Email:</strong> {viewingDocuments.customer_email}</p>
+                <p><strong>Phone:</strong> {viewingDocuments.customer_phone}</p>
+              </div>
+
               <div className="grid md:grid-cols-2 gap-6">
-                {viewingDocuments.id_document && (
+                {viewingDocuments.id_document ? (
                   <div>
                     <h4 className="font-semibold mb-2">ID Document</h4>
                     <div className="border rounded-lg p-4 bg-gray-50">
                       <p className="text-sm text-gray-600 mb-2">File: {viewingDocuments.id_document}</p>
+                      <img
+                        src={`http://localhost:5000/uploads/${viewingDocuments.id_document}`}
+                        alt="ID Document"
+                        className="w-full h-64 object-contain bg-white rounded mb-3"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                      <p className="text-sm text-gray-500 mb-3" style={{display: 'none'}}>
+                        Preview not available for this file type
+                      </p>
                       <a
-                        href={`/uploads/${viewingDocuments.id_document}`}
+                        href={`http://localhost:5000/uploads/${viewingDocuments.id_document}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                        className="inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
                       >
                         View/Download
                       </a>
                     </div>
                   </div>
+                ) : (
+                  <div>
+                    <h4 className="font-semibold mb-2">ID Document</h4>
+                    <div className="border rounded-lg p-4 bg-gray-50 text-center text-gray-500">
+                      No ID document uploaded
+                    </div>
+                  </div>
                 )}
-                {viewingDocuments.passport_document && (
+
+                {viewingDocuments.passport_document ? (
                   <div>
                     <h4 className="font-semibold mb-2">Passport Document</h4>
                     <div className="border rounded-lg p-4 bg-gray-50">
                       <p className="text-sm text-gray-600 mb-2">File: {viewingDocuments.passport_document}</p>
+                      <img
+                        src={`http://localhost:5000/uploads/${viewingDocuments.passport_document}`}
+                        alt="Passport Document"
+                        className="w-full h-64 object-contain bg-white rounded mb-3"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                      <p className="text-sm text-gray-500 mb-3" style={{display: 'none'}}>
+                        Preview not available for this file type
+                      </p>
                       <a
-                        href={`/uploads/${viewingDocuments.passport_document}`}
+                        href={`http://localhost:5000/uploads/${viewingDocuments.passport_document}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                        className="inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
                       >
                         View/Download
                       </a>
                     </div>
                   </div>
-                )}
-                {!viewingDocuments.id_document && !viewingDocuments.passport_document && (
-                  <div className="col-span-2 text-center text-gray-500 py-8">
-                    No documents uploaded for this booking
+                ) : (
+                  <div>
+                    <h4 className="font-semibold mb-2">Passport Document</h4>
+                    <div className="border rounded-lg p-4 bg-gray-50 text-center text-gray-500">
+                      No passport document uploaded
+                    </div>
                   </div>
                 )}
               </div>
@@ -1062,15 +1114,15 @@ const AdminPage = () => {
       {/* Car Add/Edit Modal */}
       {showCarForm && (
         <div
-          className="fixed inset-0 flex items-center justify-center z-50 p-4 overflow-y-auto"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
+          className="fixed inset-0 flex items-start justify-center z-50 p-4 pt-8 overflow-y-auto"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setShowCarForm(false);
             }
           }}
         >
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto my-8">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b flex justify-between items-center">
               <h3 className="text-2xl font-bold">
                 {editingCar ? 'Edit Car' : 'Add New Car'}
@@ -1144,6 +1196,28 @@ const AdminPage = () => {
                     placeholder="12345"
                     required
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category
+                  </label>
+                  <select
+                    name="car_category"
+                    value={carFormData.car_category}
+                    onChange={handleCarFormChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Category</option>
+                    <option value="Sedan">Sedan</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Truck">Truck</option>
+                    <option value="Van">Van</option>
+                    <option value="Luxury">Luxury</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Economy">Economy</option>
+                    <option value="Compact">Compact</option>
+                  </select>
                 </div>
 
                 <div>
