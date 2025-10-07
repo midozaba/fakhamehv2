@@ -179,8 +179,11 @@ const CarsPage = () => {
                     <div className="w-full aspect-[16/9]">
                       <img
                         src={getCarImage(car.car_barnd, car.car_type)}
-                        alt={`${car.car_barnd} ${car.car_type}`}
+                        alt={`${car.car_barnd} ${car.car_type} ${car.car_model} for rent - Starting at ${currency === 'USD' ? '$' : 'JOD'} ${convertPrice(car.price_per_day)}/day`}
                         className="w-full h-full object-cover"
+                        loading="lazy"
+                        width="640"
+                        height="360"
                       />
                     </div>
 

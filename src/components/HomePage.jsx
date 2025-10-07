@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Car, Shield, Clock, Award, Users, MapPin, Phone, Mail, Star, CheckCircle, Zap, Heart } from 'lucide-react';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { useTranslation } from '../utils/translations';
 import { useApp } from '../context/AppContext';
 import { getCarImage } from '../utils/carHelpers';
@@ -24,6 +25,7 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedRating, setSelectedRating] = useState(0);
+  const reviewRecaptchaRef = useRef(null);
 
   // Conversion rate: 1 JOD = 1.41 USD
   const convertPrice = (priceJOD) => {
@@ -119,8 +121,11 @@ const HomePage = () => {
         <div className="relative h-[500px] md:h-[600px]">
           <img
             src={storePic}
-            alt="Al-Fakhama Car Rental Store"
+            alt="Al-Fakhama Car Rental storefront in Amman, Jordan - Premium car rental services"
             className="w-full h-full object-cover"
+            loading="eager"
+            width="1920"
+            height="600"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/40"></div>
 
@@ -230,8 +235,11 @@ const HomePage = () => {
                 >
                   <img
                     src={car.image_url || getCarImage(car.car_barnd, car.car_type)}
-                    alt={`${car.car_barnd} ${car.car_type}`}
+                    alt={`Rent ${car.car_barnd} ${car.car_type} ${car.car_model} in Jordan - ${currency === 'USD' ? '$' : ''} ${convertPrice(car.price_per_day)} per day`}
                     className="w-full h-48 object-cover"
+                    loading="lazy"
+                    width="400"
+                    height="192"
                   />
                   <div className="p-6">
                     <h3 className="text-xl font-bold mb-2">{car.car_barnd} {car.car_type}</h3>
@@ -465,11 +473,18 @@ const HomePage = () => {
                   return;
                 }
 
+                const recaptchaToken = reviewRecaptchaRef.current?.getValue();
+                if (!recaptchaToken) {
+                  toast.error(language === 'ar' ? 'يرجى إكمال التحقق من reCAPTCHA' : 'Please complete the reCAPTCHA verification');
+                  return;
+                }
+
                 const formData = new FormData(e.target);
                 const reviewData = {
                   customer_name: formData.get('name'),
                   rating: selectedRating,
-                  comment: formData.get('comment')
+                  comment: formData.get('comment'),
+                  recaptchaToken
                 };
 
                 try {
@@ -485,6 +500,7 @@ const HomePage = () => {
                       : 'Thank you! Your review will be reviewed soon');
                     e.target.reset();
                     setSelectedRating(0);
+                    reviewRecaptchaRef.current?.reset();
                   } else {
                     toast.error(language === 'ar' ? 'فشل إرسال التقييم' : 'Failed to submit review');
                   }
@@ -552,6 +568,15 @@ const HomePage = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                     placeholder={language === 'ar' ? 'أخبرنا عن تجربتك...' : 'Tell us about your experience...'}
                   ></textarea>
+                </div>
+
+                {/* reCAPTCHA */}
+                <div className="flex justify-center">
+                  <ReCAPTCHA
+                    ref={reviewRecaptchaRef}
+                    sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                    hl={language}
+                  />
                 </div>
 
                 <button

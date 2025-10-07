@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 import fs from 'fs';
 import nodemailer from 'nodemailer';
+import axios from 'axios';
 
 dotenv.config();
 
@@ -102,6 +103,34 @@ transporter.verify((error, success) => {
     console.log('Email server is ready to send messages');
   }
 });
+
+// reCAPTCHA verification middleware
+const verifyRecaptcha = async (req, res, next) => {
+  const recaptchaToken = req.body.recaptchaToken;
+
+  if (!recaptchaToken) {
+    return res.status(400).json({ success: false, error: 'reCAPTCHA token is required' });
+  }
+
+  try {
+    const response = await axios.post('https://www.google.com/recaptcha/api/siteverify', null, {
+      params: {
+        secret: process.env.RECAPTCHA_SECRET_KEY,
+        response: recaptchaToken
+      }
+    });
+
+    if (!response.data.success) {
+      return res.status(400).json({ success: false, error: 'reCAPTCHA verification failed' });
+    }
+
+    // reCAPTCHA verified successfully, continue to next middleware
+    next();
+  } catch (error) {
+    console.error('reCAPTCHA verification error:', error);
+    return res.status(500).json({ success: false, error: 'reCAPTCHA verification error' });
+  }
+};
 
 // Email templates
 const sendCustomerConfirmationEmail = async (booking, customer, car) => {
@@ -394,11 +423,11 @@ app.delete('/api/cars/:id', async (req, res) => {
 // Create/Update car (admin endpoint)
 app.post('/api/cars', async (req, res) => {
   try {
-    const { car_barnd, car_type, car_model, car_num, car_category, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url } = req.body;
+    const { car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url } = req.body;
 
     const [result] = await promisePool.query(
-      'INSERT INTO cars (car_barnd, car_type, car_model, car_num, car_category, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [car_barnd, car_type, car_model, car_num, car_category, price_per_day, price_per_week, price_per_month, car_color, mileage, status || 'available', image_url]
+      'INSERT INTO cars (car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status || 'available', image_url]
     );
 
     res.status(201).json({ success: true, message: 'Car created successfully', id: result.insertId });
@@ -411,11 +440,11 @@ app.post('/api/cars', async (req, res) => {
 // Update car (bardo admin endpoint)
 app.put('/api/cars/:id', async (req, res) => {
   try {
-    const { car_barnd, car_type, car_model, car_num, car_category, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url } = req.body;
+    const { car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url } = req.body;
 
     const [result] = await promisePool.query(
-      'UPDATE cars SET car_barnd = ?, car_type = ?, car_model = ?, car_num = ?, car_category = ?, price_per_day = ?, price_per_week = ?, price_per_month = ?, car_color = ?, mileage = ?, status = ?, image_url = ? WHERE id = ?',
-      [car_barnd, car_type, car_model, car_num, car_category, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url, req.params.id]
+      'UPDATE cars SET car_barnd = ?, car_type = ?, car_model = ?, car_num = ?, price_per_day = ?, price_per_week = ?, price_per_month = ?, car_color = ?, mileage = ?, status = ?, image_url = ? WHERE id = ?',
+      [car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url, req.params.id]
     );
 
     if (result.affectedRows === 0) {
@@ -561,7 +590,7 @@ app.patch('/api/rentals/:id/complete', async (req, res) => {
 });
 
 // Contact form submission
-app.post('/api/contact', async (req, res) => {
+app.post('/api/contact', verifyRecaptcha, async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
@@ -623,6 +652,28 @@ app.post('/api/bookings', upload.fields([
   { name: 'idDocument', maxCount: 1 },
   { name: 'passportDocument', maxCount: 1 }
 ]), async (req, res) => {
+  // Verify reCAPTCHA for multipart form data
+  const recaptchaToken = req.body.recaptchaToken;
+  if (!recaptchaToken) {
+    return res.status(400).json({ success: false, error: 'reCAPTCHA token is required' });
+  }
+
+  try {
+    const recaptchaResponse = await axios.post('https://www.google.com/recaptcha/api/siteverify', null, {
+      params: {
+        secret: process.env.RECAPTCHA_SECRET_KEY,
+        response: recaptchaToken
+      }
+    });
+
+    if (!recaptchaResponse.data.success) {
+      return res.status(400).json({ success: false, error: 'reCAPTCHA verification failed' });
+    }
+  } catch (error) {
+    console.error('reCAPTCHA verification error:', error);
+    return res.status(500).json({ success: false, error: 'reCAPTCHA verification error' });
+  }
+
   const connection = await promisePool.getConnection();
 
   try {
@@ -999,8 +1050,8 @@ app.get('/api/admin/reviews', async (req, res) => {
   }
 });
 
-// Submit review (customer endpoint - pending approval)
-app.post('/api/reviews/submit', async (req, res) => {
+// Submit review (customer endpoint - pending approval) with reCAPTCHA verification
+app.post('/api/reviews/submit', verifyRecaptcha, async (req, res) => {
   try {
     const { customer_name, rating, comment } = req.body;
 

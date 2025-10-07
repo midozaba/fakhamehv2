@@ -9,12 +9,14 @@ import { AppProvider, useApp } from "./context/AppContext";
 import api from "./services/api";
 import { initGA, trackPageView, trackBookingFunnel } from "./utils/analytics";
 import Header from "./components/Header";
+import Breadcrumbs from "./components/common/Breadcrumbs";
 import HomePage from "./components/HomePage";
 import CarsPage from "./components/CarsPage";
 import BookingPage from "./components/BookingPage";
 import ContactUs from "./components/ContactUs";
 import TermsOfService from "./components/TermsOfService";
 import AboutUs from "./components/AboutUs";
+import FAQ from "./components/FAQ";
 import AdminPage from "./components/AdminPage";
 import NotFound from "./components/NotFound";
 import Footer from "./components/Footer";
@@ -137,6 +139,11 @@ const AppLayout = () => {
       formData.append('idDocument', idDocument);
       formData.append('passportDocument', passportDocument);
 
+      // Add recaptcha token if available
+      if (window.recaptchaToken) {
+        formData.append('recaptchaToken', window.recaptchaToken);
+      }
+
       // Show loading toast
       toast.info(language === 'ar' ? 'جاري إرسال الحجز...' : 'Submitting booking...', {
         autoClose: false,
@@ -212,6 +219,9 @@ const AppLayout = () => {
     >
       {location.pathname !== '/admin' && <Header />}
 
+      {/* Breadcrumbs - shown on all pages except home and admin */}
+      {location.pathname !== '/admin' && <Breadcrumbs />}
+
       <main className="relative overflow-hidden">
         <div
           className={`transition-all duration-300 ease-in-out ${
@@ -244,6 +254,10 @@ const AppLayout = () => {
             <Route
               path="/about-us"
               element={<AboutUs />}
+            />
+            <Route
+              path="/faq"
+              element={<FAQ />}
             />
             <Route
               path="/admin"

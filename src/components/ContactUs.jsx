@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Loader2 } from "lucide-react";
+import ReCAPTCHA from 'react-google-recaptcha';
 import { useTranslation } from "../utils/translations";
 import { useApp } from "../context/AppContext";
 import { getContactSchema } from "../utils/validationSchemas";
@@ -14,6 +15,7 @@ const ContactUs = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [visibleSections, setVisibleSections] = useState(new Set());
   const sectionRefs = useRef([]);
+  const contactRecaptchaRef = useRef(null);
 
   // React Hook Form with Yup validation
   const {
@@ -72,6 +74,14 @@ const ContactUs = () => {
   };
 
   const onSubmit = async (formData) => {
+    // Validate reCAPTCHA
+    const recaptchaToken = contactRecaptchaRef.current?.getValue();
+    if (!recaptchaToken) {
+      const { toast } = await import('react-toastify');
+      toast.error(language === 'ar' ? 'يرجى إكمال التحقق من reCAPTCHA' : 'Please complete the reCAPTCHA verification');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -79,7 +89,7 @@ const ContactUs = () => {
       const { toast } = await import('react-toastify');
 
       // Submit using API service (with automatic retry)
-      await api.contact.send(formData);
+      await api.contact.send({ ...formData, recaptchaToken });
 
       // Scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -89,8 +99,9 @@ const ContactUs = () => {
         setShowSuccessModal(true);
       }, 300);
 
-      // Reset form
+      // Reset form and recaptcha
       reset();
+      contactRecaptchaRef.current?.reset();
 
       toast.success(language === 'ar'
         ? 'تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.'
@@ -227,6 +238,15 @@ const ContactUs = () => {
                 {errors.message && (
                   <p className="mt-1 text-sm text-red-600">{errors.message.message}</p>
                 )}
+              </div>
+
+              {/* reCAPTCHA */}
+              <div className="flex justify-center">
+                <ReCAPTCHA
+                  ref={contactRecaptchaRef}
+                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                  hl={language}
+                />
               </div>
 
               <button

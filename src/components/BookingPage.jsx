@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Users, Fuel, Shield, Star, Phone, Wifi, MapPin, Loader2 } from 'lucide-react';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { useTranslation } from '../utils/translations';
 import { useApp } from '../context/AppContext';
 import { getCarImage, calculatePrice } from '../utils/carHelpers';
@@ -12,6 +13,7 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
   const t = useTranslation(language);
   const [car, setCar] = useState(selectedCar);
   const [loading, setLoading] = useState(!selectedCar && carId);
+  const recaptchaRef = useRef(null);
 
   // Fetch car if carId is in URL but no selectedCar
   useEffect(() => {
@@ -66,8 +68,11 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             <img
               src={getCarImage(car.car_barnd, car.car_type)}
-              alt={`${car.car_barnd} ${car.car_type}`}
+              alt={`${car.car_barnd} ${car.car_type} ${car.car_model} available for rent - Al-Fakhama Car Rental Jordan`}
               className="w-full h-64 object-cover"
+              loading="eager"
+              width="800"
+              height="256"
             />
             <div className="p-6">
               <h2 className="text-2xl font-bold mb-4">{car.car_barnd} {car.car_type}</h2>
@@ -284,6 +289,17 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* reCAPTCHA Box */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex justify-center">
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                  hl={language}
+                />
               </div>
             </div>
           </div>
@@ -522,6 +538,34 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
         </div>
 
         <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+          {/* Age Verification Checkbox */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <label className="flex items-start space-x-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={bookingData.ageConfirmed || false}
+                onChange={(e) => setBookingData({
+                  ...bookingData,
+                  ageConfirmed: e.target.checked
+                })}
+                className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                required
+              />
+              <div className="flex-1">
+                <span className="font-medium text-gray-900">
+                  {language === 'ar'
+                    ? 'أؤكد أن عمري 23 عامًا أو أكثر *'
+                    : 'I confirm that I am 23 years or older *'}
+                </span>
+                <p className="text-sm text-gray-600 mt-1">
+                  {language === 'ar'
+                    ? 'يجب أن يكون عمر السائق 23 عامًا على الأقل لاستئجار سيارة'
+                    : 'Driver must be at least 23 years old to rent a vehicle'}
+                </p>
+              </div>
+            </label>
+          </div>
+
           <h3 className="text-xl font-bold mb-4">{t('totalPrice')}</h3>
           <div className="space-y-2 mb-4">
             <div className="flex justify-between">
@@ -562,7 +606,26 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
           </div>
 
           <button
-            onClick={handleBookingSubmit}
+            onClick={async () => {
+              const { toast } = await import('react-toastify');
+
+              // Check age confirmation
+              if (!bookingData.ageConfirmed) {
+                toast.error(language === 'ar'
+                  ? 'يرجى تأكيد أن عمرك 23 عامًا أو أكثر'
+                  : 'Please confirm that you are 23 years or older');
+                return;
+              }
+
+              const token = recaptchaRef.current?.getValue();
+              if (!token) {
+                toast.error(language === 'ar' ? 'يرجى إكمال التحقق من reCAPTCHA' : 'Please complete the reCAPTCHA verification');
+                return;
+              }
+              // Store token for server verification
+              window.recaptchaToken = token;
+              handleBookingSubmit();
+            }}
             disabled={isSubmitting}
             className="w-full bg-gradient-to-r from-blue-900 to-slate-600 text-white py-4 rounded-lg text-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
           >
