@@ -18,6 +18,8 @@ import TermsOfService from "./components/TermsOfService";
 import AboutUs from "./components/AboutUs";
 import FAQ from "./components/FAQ";
 import AdminPage from "./components/AdminPage";
+import AdminLogin from "./components/AdminLogin";
+import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./components/NotFound";
 import Footer from "./components/Footer";
 import ChatBot from "./components/ChatBot";
@@ -212,15 +214,18 @@ const AppLayout = () => {
     }
   };
 
+  // Check if current path should hide header/footer
+  const hideHeaderFooter = location.pathname === '/admin' || location.pathname.startsWith('/admin/');
+
   return (
     <div
       className="min-h-screen bg-gray-50"
       dir={language === "ar" ? "rtl" : "ltr"}
     >
-      {location.pathname !== '/admin' && <Header />}
+      {!hideHeaderFooter && <Header />}
 
-      {/* Breadcrumbs - shown on all pages except home and admin */}
-      {location.pathname !== '/admin' && <Breadcrumbs />}
+      {/* Breadcrumbs - shown on all pages except home, admin, and login */}
+      {!hideHeaderFooter && <Breadcrumbs />}
 
       <main className="relative overflow-hidden">
         <div
@@ -260,8 +265,16 @@ const AppLayout = () => {
               element={<FAQ />}
             />
             <Route
+              path="/admin/login"
+              element={<AdminLogin />}
+            />
+            <Route
               path="/admin"
-              element={<AdminPage />}
+              element={
+                <ProtectedRoute>
+                  <AdminPage />
+                </ProtectedRoute>
+              }
             />
             <Route
               path="*"
@@ -271,8 +284,8 @@ const AppLayout = () => {
         </div>
       </main>
 
-      {location.pathname !== '/admin' && <Footer />}
-      {location.pathname !== '/admin' && <ChatBot />}
+      {!hideHeaderFooter && <Footer />}
+      {!hideHeaderFooter && <ChatBot />}
       <ToastContainer
         position="top-right"
         autoClose={5000}

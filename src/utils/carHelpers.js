@@ -31,14 +31,48 @@ export const getCarImage = (brand, type) => {
   return carImages[key] || carImages.default;
 };
 
+// Location pricing in JOD
+export const locationPricing = {
+  'Civil Airport (MKA)': 25,
+  'Hotels in Amman (AMH)': 10,
+  'King Hussein Bridge (KHB)': 35,
+  'Queen Alia Airport (AMM)': 25,
+  'Sheikh Hussein Bridge (SHB)': 35,
+  'alfakhama Office Amman': 0,
+  'Madaba City': 20,
+  'Madaba Hotels Delivery': 25,
+  'Dead Sea': 40,
+  'Dead Sea Hotels Delivery': 50,
+  'Petra City & Wadi mosa King Hussein International Airport (AQJ)': 60,
+  'Aqaba City': 90,
+  'Aqaba Hotels Delivery': 110
+};
+
+export const locations = [
+  'alfakhama Office Amman',
+  'Civil Airport (MKA)',
+  'Hotels in Amman (AMH)',
+  'King Hussein Bridge (KHB)',
+  'Queen Alia Airport (AMM)',
+  'Sheikh Hussein Bridge (SHB)',
+  'Madaba City',
+  'Madaba Hotels Delivery',
+  'Dead Sea',
+  'Dead Sea Hotels Delivery',
+  'Petra City & Wadi mosa King Hussein International Airport (AQJ)',
+  'Aqaba City',
+  'Aqaba Hotels Delivery'
+];
+
 export const calculatePrice = (selectedCar, bookingData) => {
-  if (!selectedCar) return { basePrice: 0, insurancePrice: 0, servicesPrice: 0, airportPickupPrice: 0, total: 0 };
-  if (!bookingData || !bookingData.days) return { basePrice: 0, insurancePrice: 0, servicesPrice: 0, airportPickupPrice: 0, total: 0 };
+  if (!selectedCar) return { basePrice: 0, insurancePrice: 0, servicesPrice: 0, airportPickupPrice: 0, locationPrice: 0, total: 0 };
+  if (!bookingData || !bookingData.days) return { basePrice: 0, insurancePrice: 0, servicesPrice: 0, airportPickupPrice: 0, locationPrice: 0, total: 0 };
 
   let basePrice = selectedCar.price_per_day * bookingData.days;
   let insurancePrice = 0;
   let servicesPrice = 0;
   let airportPickupPrice = 0;
+  let locationPrice = 0;
 
   if (bookingData.insurance === 'basic') insurancePrice = 5 * bookingData.days;
   else if (bookingData.insurance === 'full') insurancePrice = 10 * bookingData.days;
@@ -54,11 +88,20 @@ export const calculatePrice = (selectedCar, bookingData) => {
     });
   }
 
+  // Calculate location fees
+  if (bookingData.pickupLocation && locationPricing[bookingData.pickupLocation]) {
+    locationPrice += locationPricing[bookingData.pickupLocation];
+  }
+  if (bookingData.returnLocation && locationPricing[bookingData.returnLocation]) {
+    locationPrice += locationPricing[bookingData.returnLocation];
+  }
+
   return {
     basePrice,
     insurancePrice,
     servicesPrice,
     airportPickupPrice,
-    total: basePrice + insurancePrice + servicesPrice + airportPickupPrice
+    locationPrice,
+    total: basePrice + insurancePrice + servicesPrice + airportPickupPrice + locationPrice
   };
 };

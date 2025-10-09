@@ -8,8 +8,19 @@ import multer from 'multer';
 import fs from 'fs';
 import nodemailer from 'nodemailer';
 import axios from 'axios';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
+
+// Validate required environment variables
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET is not defined in environment variables.');
+  process.exit(1);
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,8 +64,55 @@ const upload = multer({
 });
 
 // Middleware
-app.use(cors());
+
+// Security: Helmet for HTTP headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.google.com', 'https://www.gstatic.com'],
+      frameSrc: ["'self'", 'https://www.google.com'],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
+    },
+  },
+}));
+
+// Security: CORS with allowed origins
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true // Allow cookies
+}));
+
+// Security: Cookie parser
+app.use(cookieParser());
+
 app.use(express.json());
+
+// Security: HTTPS enforcement (only in production)
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.header('x-forwarded-proto') !== 'https') {
+      res.redirect(`https://${req.header('host')}${req.url}`);
+    } else {
+      next();
+    }
+  });
+}
 
 // Only serve static files in production
 if (process.env.NODE_ENV === 'production') {
@@ -131,6 +189,164 @@ const verifyRecaptcha = async (req, res, next) => {
     return res.status(500).json({ success: false, error: 'reCAPTCHA verification error' });
   }
 };
+
+// ==================== ADMIN AUTHENTICATION ====================
+
+// Security: Rate limiting for login endpoint
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login requests per windowMs
+  message: { success: false, message: 'Too many login attempts. Please try again after 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Don't count successful logins
+});
+
+// JWT Secret (no fallback - must be set in environment)
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// JWT Authentication Middleware (supports both cookie and header)
+const authenticateToken = (req, res, next) => {
+  // Try to get token from cookie first, then from Authorization header
+  let token = req.cookies.adminToken;
+
+  if (!token) {
+    const authHeader = req.headers['authorization'];
+    token = authHeader && authHeader.split(' ')[1];
+  }
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Access token required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, message: 'Invalid or expired token' });
+    }
+    req.user = user;
+    next();
+  });
+};
+
+// Helper function to log login attempts
+const logLoginAttempt = async (username, success, ip, userAgent) => {
+  try {
+    await promisePool.execute(
+      `INSERT INTO login_attempts (username, success, ip_address, user_agent, attempted_at)
+       VALUES (?, ?, ?, ?, NOW())`,
+      [username, success, ip, userAgent]
+    );
+  } catch (error) {
+    console.error('Error logging login attempt:', error);
+  }
+};
+
+// Admin Login Endpoint (with rate limiting)
+app.post('/api/admin/login', loginLimiter, async (req, res) => {
+  const ip = req.ip || req.connection.remoteAddress;
+  const userAgent = req.get('user-agent') || 'Unknown';
+
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: 'Username and password are required' });
+    }
+
+    // Get user from database
+    const [users] = await promisePool.execute(
+      'SELECT * FROM admin_users WHERE username = ? AND is_active = TRUE',
+      [username]
+    );
+
+    if (users.length === 0) {
+      // Log failed attempt
+      await logLoginAttempt(username, false, ip, userAgent);
+      return res.status(401).json({ success: false, message: 'Invalid username or password' });
+    }
+
+    const user = users[0];
+
+    // Compare password with bcrypt
+    const isValidPassword = await bcrypt.compare(password, user.password);
+
+    if (!isValidPassword) {
+      // Log failed attempt
+      await logLoginAttempt(username, false, ip, userAgent);
+      return res.status(401).json({ success: false, message: 'Invalid username or password' });
+    }
+
+    // Update last login time
+    await promisePool.execute(
+      'UPDATE admin_users SET last_login = NOW() WHERE id = ?',
+      [user.id]
+    );
+
+    // Log successful attempt
+    await logLoginAttempt(username, true, ip, userAgent);
+
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        id: user.id,
+        username: user.username,
+        role: user.role
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Set token in httpOnly cookie
+    res.cookie('adminToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
+    // Return success with token (for backward compatibility) and user info
+    res.json({
+      success: true,
+      token, // Still send token for clients that don't support cookies
+      user: {
+        id: user.id,
+        username: user.username,
+        full_name: user.full_name,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    // Log failed attempt
+    await logLoginAttempt(req.body.username || 'unknown', false, ip, userAgent);
+    res.status(500).json({ success: false, message: 'Login failed. Please try again.' });
+  }
+});
+
+// Verify Token Endpoint (optional - for checking if user is still authenticated)
+app.get('/api/admin/verify', authenticateToken, (req, res) => {
+  res.json({
+    success: true,
+    user: {
+      id: req.user.id,
+      username: req.user.username,
+      role: req.user.role
+    }
+  });
+});
+
+// Logout Endpoint (clears cookie)
+app.post('/api/admin/logout', (req, res) => {
+  res.clearCookie('adminToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+  res.json({ success: true, message: 'Logged out successfully' });
+});
+
+// ==================== END ADMIN AUTHENTICATION ====================
 
 // Email templates
 const sendCustomerConfirmationEmail = async (booking, customer, car) => {
@@ -1136,7 +1352,7 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Start server
+//Start server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

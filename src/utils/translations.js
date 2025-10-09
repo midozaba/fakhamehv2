@@ -9,6 +9,7 @@ export const translations = {
     'contact us': 'اتصل بنا',
     'terms of service': 'شروط الخدمة',
     'TOS': 'شروط الخدمة',
+    faq: 'الأسئلة الشائعة',
 
     // Hero Section
     heroTitle: 'الفخامة لتأجير السيارات',
@@ -171,6 +172,7 @@ export const translations = {
     'contact us': 'Contact Us',
     'terms of service': 'Terms of Service',
     'TOS': 'Terms of Service',
+    faq: 'FAQ',
 
     // Hero Section
     heroTitle: 'Al Fakhama Car Rental',

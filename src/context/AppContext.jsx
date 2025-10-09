@@ -25,6 +25,16 @@ export const AppProvider = ({ children }) => {
     return localStorage.getItem('currency') || 'JOD';
   });
 
+  // Authentication state
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  const [token, setToken] = useState(() => {
+    return localStorage.getItem('token') || null;
+  });
+
   // Selected car state
   const [selectedCar, setSelectedCar] = useState(null);
 
@@ -32,6 +42,8 @@ export const AppProvider = ({ children }) => {
   const [bookingData, setBookingData] = useState({
     pickupDate: "",
     returnDate: "",
+    pickupLocation: "",
+    returnLocation: "",
     days: 1,
     insurance: "basic",
     additionalServices: [],
@@ -81,6 +93,25 @@ export const AppProvider = ({ children }) => {
     }, 150);
   };
 
+  // Authentication functions
+  const login = (authToken, userData) => {
+    setToken(authToken);
+    setUser(userData);
+    localStorage.setItem('token', authToken);
+    localStorage.setItem('user', JSON.stringify(userData));
+  };
+
+  const logout = () => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  };
+
+  const isAuthenticated = () => {
+    return token !== null && user !== null;
+  };
+
   const value = {
     // Language & Currency
     language,
@@ -89,6 +120,13 @@ export const AppProvider = ({ children }) => {
     currency,
     setCurrency,
     isTransitioning,
+
+    // Authentication
+    user,
+    token,
+    login,
+    logout,
+    isAuthenticated,
 
     // Car & Booking
     selectedCar,

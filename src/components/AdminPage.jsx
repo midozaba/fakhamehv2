@@ -1,5 +1,6 @@
 /*eslint-disable */
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import {
   getBookings,
@@ -14,9 +15,10 @@ import {
 } from "../services/adminApi";
 
 const AdminPage = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   // State for dashboard stats
   const [stats, setStats] = useState(null);
@@ -137,22 +139,36 @@ const AdminPage = () => {
     }
   };
 
+  // Load current user from localStorage
+  useEffect(() => {
+    const user = localStorage.getItem('adminUser');
+    if (user) {
+      setCurrentUser(JSON.parse(user));
+    }
+  }, []);
+
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
+    toast.success('Logged out successfully');
+    navigate('/admin/login');
+  };
+
   // Load data when tab changes
   useEffect(() => {
-    if (isLoggedIn) {
-      if (activeTab === "dashboard") {
-        fetchStats();
-      } else if (activeTab === "bookings") {
-        fetchBookings();
-      } else if (activeTab === "contacts") {
-        fetchMessages();
-      } else if (activeTab === "cars") {
-        fetchCars();
-      } else if (activeTab === "reviews") {
-        fetchReviews();
-      }
+    if (activeTab === "dashboard") {
+      fetchStats();
+    } else if (activeTab === "bookings") {
+      fetchBookings();
+    } else if (activeTab === "contacts") {
+      fetchMessages();
+    } else if (activeTab === "cars") {
+      fetchCars();
+    } else if (activeTab === "reviews") {
+      fetchReviews();
     }
-  }, [activeTab, isLoggedIn, bookingsFilter, messagesFilter, reviewsFilter]);
+  }, [activeTab, bookingsFilter, messagesFilter, reviewsFilter]);
 
   // Scroll to top and lock body scroll when modal is open
   useEffect(() => {
@@ -195,13 +211,6 @@ const AdminPage = () => {
     } catch (error) {
       toast.error('Failed to update message status');
     }
-  };
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    // TODO: Implement actual authentication
-    setIsLoggedIn(true);
-    toast.success('Logged in successfully');
   };
 
   // Handle car form open for adding new car
@@ -331,53 +340,27 @@ const AdminPage = () => {
     }
   };
 
-  if (!isLoggedIn) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 to-slate-700 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-          <h2 className="text-3xl font-bold text-center text-blue-900 mb-8">Admin Login</h2>
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
-              <input
-                type="text"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter username"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-              <input
-                type="password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter password"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-blue-900 to-slate-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105"
-            >
-              Login
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-900 to-slate-600 text-white p-6 shadow-lg">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <div>
+            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+            {currentUser && (
+              <p className="text-blue-200 text-sm mt-1">
+                Welcome, {currentUser.full_name} ({currentUser.role})
+              </p>
+            )}
+          </div>
           <button
-            onClick={() => setIsLoggedIn(false)}
-            className="bg-white text-blue-900 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-all"
+            onClick={handleLogout}
+            className="bg-white text-blue-900 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-all flex items-center gap-2"
           >
-            Logout
+            <span>Logout</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
+            </svg>
           </button>
         </div>
       </div>
@@ -1002,6 +985,7 @@ const AdminPage = () => {
             )}
           </div>
         )}
+
       </div>
 
       {/* Document Viewer Modal */}

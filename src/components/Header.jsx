@@ -97,6 +97,17 @@ const Header = () => {
             >
               {t("contact us")}
             </Link>
+            {/* FAQ Button */}
+            <Link
+              to="/faq"
+              className={`px-5 py-2.5 text-base rounded-xl transition-all duration-300 ease-in-out justify-self-center ${
+                currentPage === "/faq"
+                  ? "bg-blue-900 text-white"
+                  : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
+              }`}
+            >
+              {t("faq")}
+            </Link>
           </nav>
 
           {/* Language and Currency Toggle + Mobile Menu Button */}
@@ -183,6 +194,17 @@ const Header = () => {
                 }`}
               >
                 {t("contact us")}
+              </Link>
+              <Link
+                to="/faq"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-4 py-2 text-sm rounded transition-all duration-300 ease-in-out text-left ${
+                  currentPage === "/faq"
+                    ? "bg-blue-900 text-white"
+                    : "text-gray-700 hover:bg-blue-900/10 hover:text-blue-900"
+                }`}
+              >
+                {t("faq")}
               </Link>
 
               {/* Divider */}

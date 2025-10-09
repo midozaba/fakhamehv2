@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Users, Fuel, Shield, Star, Phone, Wifi, MapP
 import ReCAPTCHA from 'react-google-recaptcha';
 import { useTranslation } from '../utils/translations';
 import { useApp } from '../context/AppContext';
-import { getCarImage, calculatePrice } from '../utils/carHelpers';
+import { getCarImage, calculatePrice, locations } from '../utils/carHelpers';
 
 const BookingPage = ({ handleBookingSubmit = () => {} }) => {
   const navigate = useNavigate();
@@ -341,6 +341,53 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
                   />
                 </div>
               </div>
+
+              {/* Pickup and Return Location */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    <MapPin className="inline-block w-4 h-4 mr-1" />
+                    {language === 'ar' ? 'موقع الاستلام *' : 'Pickup Location *'}
+                  </label>
+                  <select
+                    value={bookingData.pickupLocation || ''}
+                    onChange={(e) => setBookingData({ ...bookingData, pickupLocation: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">
+                      {language === 'ar' ? 'اختر موقع الاستلام' : 'Select Pickup Location'}
+                    </option>
+                    {locations.map(location => (
+                      <option key={location} value={location}>
+                        {location}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    <MapPin className="inline-block w-4 h-4 mr-1" />
+                    {language === 'ar' ? 'موقع الإرجاع *' : 'Return Location *'}
+                  </label>
+                  <select
+                    value={bookingData.returnLocation || ''}
+                    onChange={(e) => setBookingData({ ...bookingData, returnLocation: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">
+                      {language === 'ar' ? 'اختر موقع الإرجاع' : 'Select Return Location'}
+                    </option>
+                    {locations.map(location => (
+                      <option key={location} value={location}>
+                        {location}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="bg-blue-50 p-4 rounded-lg">
                 <span className="font-medium">{t('totalDays')}: {bookingData.days} days</span>
               </div>
