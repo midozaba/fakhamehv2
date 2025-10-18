@@ -8,7 +8,35 @@ export const categorizeCarType = (carType) => {
   return 'compact';
 };
 
-export const getCarImage = (brand, type) => {
+// Get the API base URL from environment variables
+const getApiBaseUrl = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+  // Remove /api suffix to get base URL
+  return apiUrl.replace(/\/api$/, '');
+};
+
+// Convert image URL path to full URL
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+
+  // If it's already a full URL (starts with http), return as is
+  if (imagePath.startsWith('http')) return imagePath;
+
+  // If it starts with /uploads, construct full URL
+  if (imagePath.startsWith('/uploads')) {
+    return `${getApiBaseUrl()}${imagePath}`;
+  }
+
+  return imagePath;
+};
+
+export const getCarImage = (brand, type, uploadedImageUrl) => {
+  // If there's an uploaded image, use it (check for non-empty string)
+  if (uploadedImageUrl && uploadedImageUrl.trim() !== '') {
+    return getImageUrl(uploadedImageUrl);
+  }
+
+  // Fallback to placeholder images
   const carImages = {
     'ford-fusion': 'https://images.unsplash.com/photo-1549924231-f129b911e442?w=400&h=250&fit=crop',
     'hyundai-i10': 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=250&fit=crop',
@@ -65,13 +93,14 @@ export const locations = [
 ];
 
 export const calculatePrice = (selectedCar, bookingData) => {
-  if (!selectedCar) return { basePrice: 0, insurancePrice: 0, servicesPrice: 0, airportPickupPrice: 0, locationPrice: 0, total: 0 };
-  if (!bookingData || !bookingData.days) return { basePrice: 0, insurancePrice: 0, servicesPrice: 0, airportPickupPrice: 0, locationPrice: 0, total: 0 };
+  if (!selectedCar) return { basePrice: 0, insurancePrice: 0, servicesPrice: 0, locationPrice: 0, total: 0 };
+  if (!bookingData || typeof bookingData.days !== 'number' || bookingData.days <= 0) {
+    throw new Error('days is not defined');
+  }
 
   let basePrice = selectedCar.price_per_day * bookingData.days;
   let insurancePrice = 0;
   let servicesPrice = 0;
-  let airportPickupPrice = 0;
   let locationPrice = 0;
 
   if (bookingData.insurance === 'basic') insurancePrice = 5 * bookingData.days;
@@ -84,7 +113,6 @@ export const calculatePrice = (selectedCar, bookingData) => {
     else if (service === 'wifi') servicesPrice += 2 * bookingData.days;
     else if (service === 'gps') servicesPrice += 2 * bookingData.days;
     else if (service === 'childSeat') servicesPrice += 1 * bookingData.days;
-    else if (service === 'airportPickup') airportPickupPrice = 25; // One-time fee
     });
   }
 
@@ -100,8 +128,7 @@ export const calculatePrice = (selectedCar, bookingData) => {
     basePrice,
     insurancePrice,
     servicesPrice,
-    airportPickupPrice,
     locationPrice,
-    total: basePrice + insurancePrice + servicesPrice + airportPickupPrice + locationPrice
+    total: basePrice + insurancePrice + servicesPrice + locationPrice
   };
 };

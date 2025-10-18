@@ -1200,16 +1200,11 @@ app.get('/api/bookings', authenticateToken, async (req, res) => {
             phone: 3,
             wifi: 2,
             gps: 2,
-            childSeat: 1,
-            airportPickup: 25 // one-time fee
+            childSeat: 1
           };
 
           services.forEach(service => {
-            if (service === 'airportPickup') {
-              servicesPrice += servicePrices[service];
-            } else {
-              servicesPrice += (servicePrices[service] || 0) * days;
-            }
+            servicesPrice += (servicePrices[service] || 0) * days;
           });
         } catch (e) {
           console.error('Error parsing services:', e);

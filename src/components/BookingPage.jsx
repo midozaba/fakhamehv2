@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Users, Fuel, Shield, Star, Phone, Wifi, MapPin, Loader2 } from 'lucide-react';
-import ReCAPTCHA from 'react-google-recaptcha';
+import Turnstile from 'react-turnstile';
 import { useTranslation } from '../utils/translations';
 import { useApp } from '../context/AppContext';
 import { getCarImage, calculatePrice, locations } from '../utils/carHelpers';
@@ -13,7 +13,11 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
   const t = useTranslation(language);
   const [car, setCar] = useState(selectedCar);
   const [loading, setLoading] = useState(!selectedCar && carId);
-  const recaptchaRef = useRef(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileKey, setTurnstileKey] = useState(0); // For forcing Turnstile refresh
+  const [turnstileError, setTurnstileError] = useState(false);
+  const [formValidated, setFormValidated] = useState(false);
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   // Fetch car if carId is in URL but no selectedCar
   useEffect(() => {
@@ -39,11 +43,28 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
     }
   }, [carId, selectedCar, navigate]);
 
+  // Ensure days is calculated when dates are set
+  useEffect(() => {
+    if (bookingData.pickupDate && bookingData.returnDate) {
+      const days = Math.ceil((new Date(bookingData.returnDate) - new Date(bookingData.pickupDate)) / (1000 * 60 * 60 * 24));
+      if (days > 0 && days !== bookingData.days) {
+        setBookingData(prev => ({ ...prev, days: Math.max(1, days) }));
+      }
+    }
+  }, [bookingData.pickupDate, bookingData.returnDate, bookingData.days, setBookingData]);
+
   if (loading || !car) {
     return <div className="text-center py-8">Loading...</div>;
   }
 
-  const pricing = calculatePrice(car, bookingData);
+  // Calculate pricing safely
+  let pricing;
+  try {
+    pricing = calculatePrice(car, bookingData);
+  } catch (error) {
+    pricing = { basePrice: 0, insurancePrice: 0, servicesPrice: 0, locationPrice: 0, total: 0 };
+    console.warn('Pricing calculation error:', error.message);
+  }
 
   // Conversion rate: 1 JOD = 1.41 USD
   const convertPrice = (priceJOD) => {
@@ -51,6 +72,101 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
   };
 
   const currencySymbol = currency === "USD" ? "$" : "JOD";
+
+  // Validate form before showing Turnstile
+  const validateForm = async () => {
+    const { toast } = await import('react-toastify');
+    const { name, email, phone, license, street, city, country, area, postalCode, idDocument, passportDocument } = bookingData.customerInfo;
+
+    // Validate dates first
+    if (!bookingData.pickupDate || !bookingData.returnDate) {
+      toast.error(language === 'ar'
+        ? 'يرجى تحديد تواريخ الاستلام والإرجاع'
+        : 'Please select pickup and return dates');
+      return false;
+    }
+
+    // Validate pickup/return locations
+    if (!bookingData.pickupLocation || !bookingData.returnLocation) {
+      toast.error(language === 'ar'
+        ? 'يرجى تحديد مواقع الاستلام والإرجاع'
+        : 'Please select pickup and return locations');
+      return false;
+    }
+
+    // Validate days
+    if (!bookingData.days || bookingData.days < 1) {
+      toast.error(language === 'ar'
+        ? 'تاريخ الإرجاع يجب أن يكون بعد تاريخ الاستلام'
+        : 'Return date must be after pickup date');
+      return false;
+    }
+
+    // Check age confirmation
+    if (!bookingData.ageConfirmed) {
+      toast.error(language === 'ar'
+        ? 'يرجى تأكيد أن عمرك 23 عامًا أو أكثر'
+        : 'Please confirm that you are 23 years or older');
+      return false;
+    }
+
+    // Validate insurance selected
+    if (!bookingData.insurance) {
+      toast.error(language === 'ar'
+        ? 'يرجى اختيار نوع التأمين'
+        : 'Please select an insurance option');
+      return false;
+    }
+
+    // Validate using Yup schema
+    try {
+      const { getBookingSchema } = await import('../utils/validationSchemas');
+      const schema = getBookingSchema(language);
+
+      // Prepare data for validation
+      const dataToValidate = {
+        name,
+        email,
+        phone,
+        license,
+        street,
+        city,
+        area: area || '',
+        postalCode: postalCode || '',
+        country,
+        pickupDate: bookingData.pickupDate,
+        returnDate: bookingData.returnDate,
+        insurance: bookingData.insurance,
+        idDocument,
+        passportDocument
+      };
+
+      await schema.validate(dataToValidate, { abortEarly: false });
+
+      // If validation passes
+      setFormValidated(true);
+      toast.success(language === 'ar'
+        ? 'تم التحقق من النموذج بنجاح! يرجى إكمال التحقق الأمني.'
+        : 'Form validated successfully! Please complete security verification.', {
+        autoClose: 3000
+      });
+
+      // Scroll to Turnstile section
+      setTimeout(() => {
+        document.getElementById('turnstile-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+
+      return true;
+    } catch (validationError) {
+      if (validationError.inner && validationError.inner.length > 0) {
+        // Show first error
+        toast.error(validationError.inner[0].message, { autoClose: 5000 });
+      } else {
+        toast.error(validationError.message, { autoClose: 5000 });
+      }
+      return false;
+    }
+  };
 
   return (
     <div className={`${language === 'ar' ? 'rtl' : 'ltr'} py-8`}>
@@ -67,7 +183,7 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             <img
-              src={getCarImage(car.car_barnd, car.car_type)}
+              src={getCarImage(car.car_barnd, car.car_type, car.image_url)}
               alt={`${car.car_barnd} ${car.car_type} ${car.car_model} available for rent - Al-Fakhama Car Rental Jordan`}
               className="w-full h-64 object-cover"
               loading="eager"
@@ -292,16 +408,6 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
               </div>
             </div>
 
-            {/* reCAPTCHA Box */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex justify-center">
-                <ReCAPTCHA
-                  ref={recaptchaRef}
-                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                  hl={language}
-                />
-              </div>
-            </div>
           </div>
 
           <div className="space-y-6">
@@ -425,56 +531,6 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-xl font-bold mb-4">{t('additionalServices')}</h3>
               <div className="space-y-3">
-                {/* Airport Pickup - Featured Service */}
-                <div className="relative">
-                  <div className="absolute -top-2 -right-2 z-10">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
-                      <Star className="w-3 h-3 fill-current" />
-                      {language === 'ar' ? 'جديد!' : 'NEW!'}
-                    </span>
-                  </div>
-                  <label className="flex items-start space-x-3 p-4 border-2 border-blue-500 rounded-lg hover:bg-blue-50 cursor-pointer transition-all bg-gradient-to-r from-blue-50 to-indigo-50 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 to-indigo-400/10 animate-shimmer"></div>
-                    <input
-                      type="checkbox"
-                      checked={bookingData.additionalServices.includes('airportPickup')}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setBookingData({ ...bookingData, additionalServices: [...bookingData.additionalServices, 'airportPickup'] });
-                        } else {
-                          setBookingData({ ...bookingData, additionalServices: bookingData.additionalServices.filter(s => s !== 'airportPickup') });
-                        }
-                      }}
-                      className="mt-1 relative z-10"
-                    />
-                    <div className="relative z-10 bg-blue-600 p-3 rounded-lg">
-                      <MapPin className="text-white" size={24} />
-                    </div>
-                    <div className="flex-1 relative z-10">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-blue-900">
-                              {language === 'ar' ? 'خدمة التوصيل من المطار' : 'Airport Pickup Service'}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {language === 'ar'
-                              ? 'نقوم بتوصيل سيارتك إلى مطار الملكة علياء الدولي'
-                              : 'We deliver your car to Queen Alia International Airport'}
-                          </p>
-                        </div>
-                        <div className="text-right ml-4">
-                          <div className="text-blue-900 font-bold text-lg">{currencySymbol} {convertPrice(25)}</div>
-                          <div className="text-xs text-gray-600 font-medium">
-                            {language === 'ar' ? 'دفعة واحدة' : 'One-time fee'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </label>
-                </div>
-
                 {/* Regular Services */}
                 {[
                   { id: 'phone', name: t('mobilePhone'), priceJOD: 3, icon: Phone },
@@ -597,6 +653,7 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
                 })}
                 className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                 required
+                disabled={formValidated}
               />
               <div className="flex-1">
                 <span className="font-medium text-gray-900">
@@ -613,8 +670,9 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
             </label>
           </div>
 
+          {/* Pricing Summary */}
           <h3 className="text-xl font-bold mb-4">{t('totalPrice')}</h3>
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2 mb-6">
             <div className="flex justify-between">
               <span>{t('basePrice')} ({bookingData.days} days):</span>
               <span>{currencySymbol} {convertPrice(pricing.basePrice)}</span>
@@ -631,19 +689,6 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
                 <span>{currencySymbol} {convertPrice(pricing.servicesPrice)}</span>
               </div>
             )}
-            {pricing.airportPickupPrice > 0 && (
-              <div className="flex justify-between items-center bg-blue-50 -mx-2 px-2 py-2 rounded">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-blue-900">
-                    {language === 'ar' ? 'خدمة التوصيل من المطار' : 'Airport Pickup'}
-                  </span>
-                  <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-semibold">
-                    {language === 'ar' ? 'جديد!' : 'NEW'}
-                  </span>
-                </div>
-                <span className="font-semibold text-blue-900">{currencySymbol} {convertPrice(pricing.airportPickupPrice)}</span>
-              </div>
-            )}
             <div className="border-t pt-2">
               <div className="flex justify-between text-xl font-bold text-blue-900">
                 <span>{t('totalPrice')}:</span>
@@ -652,33 +697,131 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
             </div>
           </div>
 
-          <button
-            onClick={async () => {
-              const { toast } = await import('react-toastify');
+          {/* Step 1: Validate Form Button (shown before validation) */}
+          {!formValidated && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
+                  </svg>
+                  {language === 'ar'
+                    ? 'انقر على "التحقق من النموذج" للتأكد من صحة جميع المعلومات قبل المتابعة'
+                    : 'Click "Validate Form" to verify all information is correct before proceeding'}
+                </p>
+              </div>
+              <button
+                onClick={validateForm}
+                className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-4 rounded-lg text-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {language === 'ar' ? 'التحقق من النموذج والمتابعة' : 'Validate Form & Continue'}
+              </button>
+            </div>
+          )}
 
-              // Check age confirmation
-              if (!bookingData.ageConfirmed) {
-                toast.error(language === 'ar'
-                  ? 'يرجى تأكيد أن عمرك 23 عامًا أو أكثر'
-                  : 'Please confirm that you are 23 years or older');
-                return;
-              }
+          {/* Step 2: Cloudflare Turnstile - Security Verification (shown after validation) */}
+          {formValidated && (
+            <>
+              <div id="turnstile-section" className="mb-6">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-green-800 flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                    </svg>
+                    {language === 'ar'
+                      ? 'تم التحقق من النموذج بنجاح! '
+                      : 'Form validated successfully! '}
+                    <button
+                      onClick={() => {
+                        setFormValidated(false);
+                        setTurnstileToken('');
+                        setTurnstileError(false);
+                      }}
+                      className="text-green-900 underline hover:text-green-700 font-medium"
+                    >
+                      {language === 'ar' ? 'تعديل البيانات' : 'Edit Form'}
+                    </button>
+                  </p>
+                </div>
 
-              const token = recaptchaRef.current?.getValue();
-              if (!token) {
-                toast.error(language === 'ar' ? 'يرجى إكمال التحقق من reCAPTCHA' : 'Please complete the reCAPTCHA verification');
-                return;
-              }
-              // Store token for server verification
-              window.recaptchaToken = token;
-              handleBookingSubmit();
-            }}
-            disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-blue-900 to-slate-600 text-white py-4 rounded-lg text-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
-          >
-            {isSubmitting && <Loader2 className="h-5 w-5 animate-spin" />}
-            {isSubmitting ? (language === 'ar' ? 'جاري الإرسال...' : 'Submitting...') : t('confirmBooking')}
-          </button>
+                {turnstileSiteKey ? (
+                  <>
+                    <h3 className="text-lg font-semibold mb-3">
+                      {language === 'ar' ? 'التحقق الأمني *' : 'Security Verification *'}
+                    </h3>
+                    <div className="flex flex-col items-center bg-gray-50 rounded-lg p-4 border border-gray-200 mb-4">
+                      {turnstileError ? (
+                        <div className="w-full text-center">
+                          <p className="text-red-600 mb-3">
+                            {language === 'ar'
+                              ? 'حدث خطأ في التحقق. انقر للمحاولة مرة أخرى.'
+                              : 'Verification error. Click to try again.'}
+                          </p>
+                          <button
+                            onClick={() => {
+                              setTurnstileError(false);
+                              setTurnstileKey(prev => prev + 1);
+                            }}
+                            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+                          >
+                            {language === 'ar' ? 'إعادة المحاولة' : 'Retry'}
+                          </button>
+                        </div>
+                      ) : (
+                        <Turnstile
+                          key={turnstileKey}
+                          sitekey={turnstileSiteKey}
+                          onVerify={(token) => {
+                            setTurnstileToken(token);
+                            setTurnstileError(false);
+                          }}
+                          onError={() => {
+                            setTurnstileToken('');
+                            setTurnstileError(true);
+                          }}
+                          onExpire={() => {
+                            setTurnstileToken('');
+                          }}
+                          theme="light"
+                          size="normal"
+                          language={language === 'ar' ? 'ar' : 'en'}
+                        />
+                      )}
+                      {turnstileToken && !turnstileError && (
+                        <p className="text-green-600 text-sm mt-2 flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                          </svg>
+                          {language === 'ar' ? 'تم التحقق بنجاح' : 'Verified successfully'}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                ) : null}
+
+                {/* Step 3: Submit Button (shown after Turnstile verification OR if no Turnstile) */}
+                {(!turnstileSiteKey || turnstileToken) && (
+                  <button
+                    onClick={async () => {
+                      // Store token for server verification
+                      if (turnstileToken) {
+                        window.turnstileToken = turnstileToken;
+                      }
+                      handleBookingSubmit();
+                    }}
+                    disabled={isSubmitting}
+                    className="w-full bg-gradient-to-r from-blue-900 to-slate-600 text-white py-4 rounded-lg text-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 shadow-lg"
+                  >
+                    {isSubmitting && <Loader2 className="h-5 w-5 animate-spin" />}
+                    {isSubmitting ? (language === 'ar' ? 'جاري الإرسال...' : 'Submitting...') : t('confirmBooking')}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
