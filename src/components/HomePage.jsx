@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Shield, Clock, Award, Users, MapPin, Phone, Mail, Star, CheckCircle, Zap, Heart } from 'lucide-react';
-import ReCAPTCHA from 'react-google-recaptcha';
+import { Car, Shield, Clock, Award, Users, Star, CheckCircle, Zap, Heart } from 'lucide-react';
+import Turnstile from "react-turnstile";
 import { useTranslation } from '../utils/translations';
 import { useApp } from '../context/AppContext';
 import { getCarImage } from '../utils/carHelpers';
@@ -25,7 +25,13 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedRating, setSelectedRating] = useState(0);
-  const reviewRecaptchaRef = useRef(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileError, setTurnstileError] = useState(false);
+  const [turnstileKey, setTurnstileKey] = useState(0);
+  const [reviewFormValidated, setReviewFormValidated] = useState(false);
+  const [reviewFormRef, setReviewFormRef] = useState(null);
+  const [validatedReviewData, setValidatedReviewData] = useState(null);
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   // Conversion rate: 1 JOD = 1.41 USD
   const convertPrice = (priceJOD) => {
@@ -42,22 +48,29 @@ const HomePage = () => {
 
       // Fetch cars using API service (with automatic retry and caching)
       const carsData = await api.cars.getAll();
-      const shuffled = [...carsData].sort(() => 0.5 - Math.random());
+      // Ensure carsData is an array
+      const carsArray = Array.isArray(carsData) ? carsData : [];
+      const shuffled = [...carsArray].sort(() => 0.5 - Math.random());
       setFeaturedCars(shuffled.slice(0, 6));
 
       // Fetch reviews (if endpoint exists)
       try {
-        const reviewsData = await api.client.get('/reviews');
-        setReviews(reviewsData.data.slice(0, 6));
+        const reviewsData = await api.reviews.getAll();
+        // Ensure reviewsData is an array
+        const reviewsArray = Array.isArray(reviewsData) ? reviewsData : [];
+        setReviews(reviewsArray.slice(0, 6));
       } catch (reviewErr) {
         // Reviews are optional, don't fail the whole page
-        console.log('Reviews not available');
+        console.log('Reviews not available:', reviewErr.message);
+        setReviews([]);
       }
     } catch (err) {
       console.error('Error loading data:', err);
       setError(err);
       const errorMsg = getErrorMessage(err, language);
       toast.error(errorMsg);
+      setFeaturedCars([]);
+      setReviews([]);
     } finally {
       setLoading(false);
     }
@@ -95,6 +108,57 @@ const HomePage = () => {
     if (el && !sectionRefs.current.includes(el)) {
       sectionRefs.current.push(el);
     }
+  };
+
+  // Validate review form before showing Turnstile
+  const validateReviewForm = () => {
+    if (!reviewFormRef) return false;
+
+    const formData = new FormData(reviewFormRef);
+    const name = formData.get('name');
+    const comment = formData.get('comment');
+
+    if (!name || name.trim().length === 0) {
+      toast.error(language === 'ar' ? 'يرجى إدخال اسمك' : 'Please enter your name');
+      return false;
+    }
+
+    if (selectedRating === 0) {
+      toast.error(language === 'ar' ? 'يرجى اختيار التقييم' : 'Please select a rating');
+      return false;
+    }
+
+    if (!comment || comment.trim().length === 0) {
+      toast.error(language === 'ar' ? 'يرجى كتابة تعليقك' : 'Please write your comment');
+      return false;
+    }
+
+    if (comment.trim().length < 10) {
+      toast.error(language === 'ar'
+        ? 'يجب أن يكون التعليق على الأقل 10 أحرف'
+        : 'Comment must be at least 10 characters');
+      return false;
+    }
+
+    // Validation passed - store the form data
+    setValidatedReviewData({
+      customer_name: name,
+      rating: selectedRating,
+      comment: comment
+    });
+    setReviewFormValidated(true);
+    toast.success(language === 'ar'
+      ? 'تم التحقق من النموذج بنجاح! يرجى إكمال التحقق الأمني.'
+      : 'Form validated successfully! Please complete security verification.', {
+      autoClose: 3000
+    });
+
+    // Scroll to Turnstile section
+    setTimeout(() => {
+      document.getElementById('review-turnstile-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+
+    return true;
   };
 
   // Structured data for homepage
@@ -234,7 +298,7 @@ const HomePage = () => {
                   style={{ transitionDelay: `${idx * 200}ms` }}
                 >
                   <img
-                    src={car.image_url || getCarImage(car.car_barnd, car.car_type)}
+                    src={getCarImage(car.car_barnd, car.car_type, car.image_url)}
                     alt={`Rent ${car.car_barnd} ${car.car_type} ${car.car_model} in Jordan - ${currency === 'USD' ? '$' : ''} ${convertPrice(car.price_per_day)} per day`}
                     className="w-full h-48 object-cover"
                     loading="lazy"
@@ -244,7 +308,7 @@ const HomePage = () => {
                   <div className="p-6">
                     <h3 className="text-xl font-bold mb-2">{car.car_barnd} {car.car_type}</h3>
                     <p className="text-gray-500 text-sm mb-2 italic">{t('orSimilar')}</p>
-                    <p className="text-gray-600 mb-4">{t('model')}: {car.car_model} • {t('color')}: {car.car_color}</p>
+                    <p className="text-gray-600 mb-4">{t('model')}: {car.car_model} • {t('color')}: {car.car_color || 'N/A'}</p>
                     <div className="flex justify-between items-center mb-4">
                       <div className="text-2xl font-bold text-blue-900">
                         {currencySymbol} {convertPrice(car.price_per_day)} <span className="text-sm text-gray-500">{t('perDay')}</span>
@@ -465,49 +529,35 @@ const HomePage = () => {
             </div>
 
             <div className="bg-white rounded-xl shadow-xl p-8">
-              <form onSubmit={async (e) => {
-                e.preventDefault();
+              <form
+                ref={(el) => setReviewFormRef(el)}
+                onSubmit={async (e) => {
+                  e.preventDefault();
 
-                if (selectedRating === 0) {
-                  toast.error(language === 'ar' ? 'الرجاء اختيار التقييم' : 'Please select a rating');
-                  return;
-                }
+                  // Use validated data stored during validation
+                  const reviewData = {
+                    ...validatedReviewData,
+                    turnstileToken
+                  };
 
-                const recaptchaToken = reviewRecaptchaRef.current?.getValue();
-                if (!recaptchaToken) {
-                  toast.error(language === 'ar' ? 'يرجى إكمال التحقق من reCAPTCHA' : 'Please complete the reCAPTCHA verification');
-                  return;
-                }
-
-                const formData = new FormData(e.target);
-                const reviewData = {
-                  customer_name: formData.get('name'),
-                  rating: selectedRating,
-                  comment: formData.get('comment'),
-                  recaptchaToken
-                };
-
-                try {
-                  const response = await fetch('/api/reviews/submit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(reviewData)
-                  });
-
-                  if (response.ok) {
+                  try {
+                    await api.reviews.submit(reviewData);
                     toast.success(language === 'ar'
                       ? 'شكراً لك! سيتم مراجعة تقييمك قريباً'
                       : 'Thank you! Your review will be reviewed soon');
                     e.target.reset();
                     setSelectedRating(0);
-                    reviewRecaptchaRef.current?.reset();
-                  } else {
-                    toast.error(language === 'ar' ? 'فشل إرسال التقييم' : 'Failed to submit review');
+                    setTurnstileToken('');
+                    setReviewFormValidated(false);
+                    setValidatedReviewData(null);
+                  } catch (error) {
+                    console.error('Error submitting review:', error);
+                    const errorMsg = error.response?.data?.error || (language === 'ar' ? 'فشل إرسال التقييم' : 'Failed to submit review');
+                    toast.error(errorMsg);
                   }
-                } catch (error) {
-                  toast.error(language === 'ar' ? 'خطأ في الاتصال' : 'Connection error');
-                }
-              }} className="space-y-6">
+                }}
+                className="space-y-6"
+              >
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {language === 'ar' ? 'الاسم' : 'Name'} *
@@ -516,7 +566,8 @@ const HomePage = () => {
                     type="text"
                     name="name"
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={reviewFormValidated}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder={language === 'ar' ? 'أدخل اسمك' : 'Enter your name'}
                   />
                 </div>
@@ -530,8 +581,9 @@ const HomePage = () => {
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setSelectedRating(star)}
-                        className="focus:outline-none"
+                        onClick={() => !reviewFormValidated && setSelectedRating(star)}
+                        disabled={reviewFormValidated}
+                        className="focus:outline-none disabled:cursor-not-allowed"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -539,9 +591,11 @@ const HomePage = () => {
                           className={`w-10 h-10 transition-colors ${
                             star <= selectedRating
                               ? 'text-yellow-500 fill-yellow-500'
-                              : 'text-gray-300 fill-gray-300 hover:text-yellow-400 hover:fill-yellow-400'
+                              : reviewFormValidated
+                                ? 'text-gray-300 fill-gray-300'
+                                : 'text-gray-300 fill-gray-300 hover:text-yellow-400 hover:fill-yellow-400'
                           }`}
-                          style={{ cursor: 'pointer' }}
+                          style={{ cursor: reviewFormValidated ? 'not-allowed' : 'pointer' }}
                         >
                           <path
                             d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
@@ -565,26 +619,130 @@ const HomePage = () => {
                     name="comment"
                     required
                     rows="4"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    disabled={reviewFormValidated}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder={language === 'ar' ? 'أخبرنا عن تجربتك...' : 'Tell us about your experience...'}
                   ></textarea>
                 </div>
 
-                {/* reCAPTCHA */}
-                <div className="flex justify-center">
-                  <ReCAPTCHA
-                    ref={reviewRecaptchaRef}
-                    sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                    hl={language}
-                  />
-                </div>
+                {/* Step 1: Validate Form Button (shown before validation) */}
+                {!reviewFormValidated && (
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm text-blue-800 flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
+                        </svg>
+                        {language === 'ar'
+                          ? 'انقر على "التحقق من النموذج" للمتابعة'
+                          : 'Click "Validate Form" to continue'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={validateReviewForm}
+                      className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-4 rounded-lg text-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {language === 'ar' ? 'التحقق من النموذج والمتابعة' : 'Validate Form & Continue'}
+                    </button>
+                  </div>
+                )}
 
-                <button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-blue-900 to-slate-600 text-white py-4 rounded-lg text-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105"
-                >
-                  {language === 'ar' ? 'إرسال التقييم' : 'Submit Review'}
-                </button>
+                {/* Step 2 & 3: Cloudflare Turnstile and Submit (shown after validation) */}
+                {reviewFormValidated && (
+                  <div id="review-turnstile-section" className="space-y-4">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <p className="text-sm text-green-800 flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                        </svg>
+                        {language === 'ar'
+                          ? 'تم التحقق من النموذج بنجاح! '
+                          : 'Form validated successfully! '}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReviewFormValidated(false);
+                            setTurnstileToken('');
+                            setTurnstileError(false);
+                            setValidatedReviewData(null);
+                          }}
+                          className="text-green-900 underline hover:text-green-700 font-medium"
+                        >
+                          {language === 'ar' ? 'تعديل' : 'Edit'}
+                        </button>
+                      </p>
+                    </div>
+
+                    {/* Cloudflare Turnstile */}
+                    {turnstileSiteKey && (
+                      <div className="flex flex-col items-center bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                          {language === 'ar' ? 'التحقق الأمني *' : 'Security Verification *'}
+                        </label>
+                        {turnstileError ? (
+                          <div className="text-center">
+                            <p className="text-red-600 mb-3 text-sm">
+                              {language === 'ar'
+                                ? 'حدث خطأ في التحقق. انقر للمحاولة مرة أخرى.'
+                                : 'Verification error. Click to try again.'}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTurnstileError(false);
+                                setTurnstileKey(prev => prev + 1);
+                              }}
+                              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+                            >
+                              {language === 'ar' ? 'إعادة المحاولة' : 'Retry'}
+                            </button>
+                          </div>
+                        ) : (
+                          <Turnstile
+                            key={turnstileKey}
+                            sitekey={turnstileSiteKey}
+                            onVerify={(token) => {
+                              setTurnstileToken(token);
+                              setTurnstileError(false);
+                            }}
+                            onError={() => {
+                              setTurnstileToken('');
+                              setTurnstileError(true);
+                            }}
+                            onExpire={() => {
+                              setTurnstileToken('');
+                            }}
+                            theme="light"
+                            size="normal"
+                            language={language === 'ar' ? 'ar' : 'en'}
+                          />
+                        )}
+                        {turnstileToken && !turnstileError && (
+                          <p className="text-green-600 text-sm mt-2 flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                            </svg>
+                            {language === 'ar' ? 'تم التحقق' : 'Verified'}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Submit Button (shown after Turnstile verification OR if no Turnstile configured) */}
+                    {(!turnstileSiteKey || turnstileToken) && (
+                      <button
+                        type="submit"
+                        className="w-full bg-gradient-to-r from-blue-900 to-slate-600 text-white py-4 rounded-lg text-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105 shadow-lg"
+                      >
+                        {language === 'ar' ? 'إرسال التقييم' : 'Submit Review'}
+                      </button>
+                    )}
+                  </div>
+                )}
               </form>
             </div>
           </div>

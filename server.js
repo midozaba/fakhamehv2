@@ -71,12 +71,13 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.google.com', 'https://www.gstatic.com'],
-      frameSrc: ["'self'", 'https://www.google.com'],
-      imgSrc: ["'self'", 'data:', 'https:'],
-      connectSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.google.com', 'https://www.gstatic.com', 'https://challenges.cloudflare.com'],
+      frameSrc: ["'self'", 'https://www.google.com', 'https://challenges.cloudflare.com'],
+      imgSrc: ["'self'", 'data:', 'https:', 'http://localhost:*', 'http://192.168.1.124:*'],
+      connectSrc: ["'self'", 'https://challenges.cloudflare.com'],
     },
   },
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin images
 }));
 
 // Security: CORS with allowed origins
@@ -86,10 +87,21 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc)
+    // Allow requests with no origin (mobile apps, curl, etc, same-origin requests)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.indexOf(origin) === -1) {
+    // Check if origin is in allowed list
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      // Exact match
+      if (allowedOrigin === origin) return true;
+      // Also check without protocol (handle http vs https)
+      const originWithoutProtocol = origin.replace(/^https?:\/\//, '');
+      const allowedWithoutProtocol = allowedOrigin.replace(/^https?:\/\//, '');
+      return originWithoutProtocol === allowedWithoutProtocol;
+    });
+
+    if (!isAllowed) {
+      console.warn(`CORS blocked origin: ${origin}`);
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       return callback(new Error(msg), false);
     }
@@ -104,19 +116,20 @@ app.use(cookieParser());
 app.use(express.json());
 
 // Security: HTTPS enforcement (only in production)
+// Skip HTTPS redirect for API routes to prevent redirect responses on POST requests
 if (process.env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
+    // Skip redirect for API and uploads routes
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
+    }
+
     if (req.header('x-forwarded-proto') !== 'https') {
       res.redirect(`https://${req.header('host')}${req.url}`);
     } else {
       next();
     }
   });
-}
-
-// Only serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'dist')));
 }
 
 app.use('/uploads', express.static(uploadsDir));
@@ -162,7 +175,7 @@ transporter.verify((error, success) => {
   }
 });
 
-// reCAPTCHA verification middleware
+// reCAPTCHA verification middleware (Legacy)
 const verifyRecaptcha = async (req, res, next) => {
   const recaptchaToken = req.body.recaptchaToken;
 
@@ -189,6 +202,45 @@ const verifyRecaptcha = async (req, res, next) => {
     return res.status(500).json({ success: false, error: 'reCAPTCHA verification error' });
   }
 };
+
+// Cloudflare Turnstile verification middleware
+const verifyTurnstile = async (req, res, next) => {
+  const turnstileToken = req.body.turnstileToken;
+
+  if (!turnstileToken) {
+    return res.status(400).json({ success: false, error: 'Turnstile token is required' });
+  }
+
+  try {
+    const response = await axios.post('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      secret: process.env.TURNSTILE_SECRET_KEY,
+      response: turnstileToken,
+      remoteip: req.ip || req.connection.remoteAddress
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.data.success) {
+      console.error('Turnstile verification failed:', response.data);
+      return res.status(400).json({
+        success: false,
+        error: 'Turnstile verification failed',
+        errors: response.data['error-codes']
+      });
+    }
+
+    // Turnstile verified successfully, continue to next middleware
+    next();
+  } catch (error) {
+    console.error('Turnstile verification error:', error);
+    return res.status(500).json({ success: false, error: 'Turnstile verification error' });
+  }
+};
+
+
+
 
 // ==================== ADMIN AUTHENTICATION ====================
 
@@ -246,6 +298,8 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
   const ip = req.ip || req.connection.remoteAddress;
   const userAgent = req.get('user-agent') || 'Unknown';
 
+  console.log('[LOGIN] Request received:', { username: req.body?.username, ip, userAgent });
+
   try {
     const { username, password } = req.body;
 
@@ -260,8 +314,8 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
     );
 
     if (users.length === 0) {
-      // Log failed attempt
-      await logLoginAttempt(username, false, ip, userAgent);
+      // Log failed attempt (temporarily disabled for debugging)
+      // await logLoginAttempt(username, false, ip, userAgent);
       return res.status(401).json({ success: false, message: 'Invalid username or password' });
     }
 
@@ -271,8 +325,8 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
-      // Log failed attempt
-      await logLoginAttempt(username, false, ip, userAgent);
+      // Log failed attempt (temporarily disabled for debugging)
+      // await logLoginAttempt(username, false, ip, userAgent);
       return res.status(401).json({ success: false, message: 'Invalid username or password' });
     }
 
@@ -282,8 +336,8 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
       [user.id]
     );
 
-    // Log successful attempt
-    await logLoginAttempt(username, true, ip, userAgent);
+    // Log successful attempt (temporarily disabled for debugging)
+    // await logLoginAttempt(username, true, ip, userAgent);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -300,7 +354,7 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
     res.cookie('adminToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-      sameSite: 'strict',
+      sameSite: 'lax', // 'lax' for better mobile Safari compatibility while maintaining CSRF protection
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 
@@ -318,9 +372,9 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    // Log failed attempt
-    await logLoginAttempt(req.body.username || 'unknown', false, ip, userAgent);
-    res.status(500).json({ success: false, message: 'Login failed. Please try again.' });
+    // Log failed attempt (temporarily disabled for debugging)
+    // await logLoginAttempt(req.body.username || 'unknown', false, ip, userAgent);
+    res.status(500).json({ success: false, message: 'Login failed. Please try again.', error: error.message });
   }
 });
 
@@ -341,7 +395,7 @@ app.post('/api/admin/logout', (req, res) => {
   res.clearCookie('adminToken', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
+    sameSite: 'lax' // Match the login cookie settings
   });
   res.json({ success: true, message: 'Logged out successfully' });
 });
@@ -577,10 +631,17 @@ app.get('/api/cars', async (req, res) => {
     let query = 'SELECT * FROM cars';
     const params = [];
 
-    if (status) {
+    // By default, only show available cars to public users
+    // Admin can override with ?status=all or ?status=rented query parameter
+    if (status && status !== 'all') {
       query += ' WHERE status = ?';
       params.push(status);
+    } else if (!status) {
+      // No status parameter = show only available cars
+      query += ' WHERE status = ?';
+      params.push('available');
     }
+    // If status=all, show all cars (no WHERE clause)
 
     query += ' ORDER BY id DESC';
 
@@ -620,8 +681,8 @@ app.get('/api/cars/status/available', async (req, res) => {
   }
 });
 
-// Delete car
-app.delete('/api/cars/:id', async (req, res) => {
+// Delete car (admin endpoint)
+app.delete('/api/cars/:id', authenticateToken, async (req, res) => {
   try {
     const [result] = await promisePool.query('DELETE FROM cars WHERE id = ?', [req.params.id]);
 
@@ -636,40 +697,80 @@ app.delete('/api/cars/:id', async (req, res) => {
   }
 });
 
-// Create/Update car (admin endpoint)
-app.post('/api/cars', async (req, res) => {
+// Create car with image upload (admin endpoint)
+app.post('/api/cars', authenticateToken, upload.single('carImage'), async (req, res) => {
   try {
-    const { car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url } = req.body;
+    const { car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, car_category } = req.body;
+
+    // Get uploaded image filename if exists
+    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+
+    // Convert empty strings to null for optional fields
+    const mileageValue = mileage && mileage !== '' ? mileage : null;
+    const categoryValue = car_category && car_category !== '' ? car_category : null;
+    const statusValue = status && status !== '' ? status : 'available';
 
     const [result] = await promisePool.query(
-      'INSERT INTO cars (car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status || 'available', image_url]
+      'INSERT INTO cars (car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url, car_category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileageValue, statusValue, image_url, categoryValue]
     );
 
     res.status(201).json({ success: true, message: 'Car created successfully', id: result.insertId });
   } catch (error) {
     console.error('Error creating car:', error);
+    // Delete uploaded file if car creation failed
+    if (req.file) {
+      fs.unlinkSync(path.join(uploadsDir, req.file.filename));
+    }
     res.status(500).json({ success: false, error: 'Failed to create car' });
   }
 });
 
-// Update car (bardo admin endpoint)
-app.put('/api/cars/:id', async (req, res) => {
+// Update car with image upload (admin endpoint)
+app.put('/api/cars/:id', authenticateToken, upload.single('carImage'), async (req, res) => {
   try {
-    const { car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url } = req.body;
+    const { car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, car_category } = req.body;
 
-    const [result] = await promisePool.query(
-      'UPDATE cars SET car_barnd = ?, car_type = ?, car_model = ?, car_num = ?, price_per_day = ?, price_per_week = ?, price_per_month = ?, car_color = ?, mileage = ?, status = ?, image_url = ? WHERE id = ?',
-      [car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, image_url, req.params.id]
-    );
+    // Get current car to check for old image
+    const [currentCar] = await promisePool.query('SELECT image_url FROM cars WHERE id = ?', [req.params.id]);
 
-    if (result.affectedRows === 0) {
+    if (currentCar.length === 0) {
+      // Delete uploaded file if car not found
+      if (req.file) {
+        fs.unlinkSync(path.join(uploadsDir, req.file.filename));
+      }
       return res.status(404).json({ success: false, error: 'Car not found' });
     }
+
+    // If new image uploaded, use it; otherwise keep the old one
+    let image_url = currentCar[0].image_url;
+    if (req.file) {
+      image_url = `/uploads/${req.file.filename}`;
+      // Delete old image file if exists
+      if (currentCar[0].image_url && currentCar[0].image_url.startsWith('/uploads/')) {
+        const oldImagePath = path.join(__dirname, currentCar[0].image_url);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      }
+    }
+
+    // Convert empty strings to null for optional fields
+    const mileageValue = mileage && mileage !== '' ? mileage : null;
+    const categoryValue = car_category && car_category !== '' ? car_category : null;
+
+    const [result] = await promisePool.query(
+      'UPDATE cars SET car_barnd = ?, car_type = ?, car_model = ?, car_num = ?, price_per_day = ?, price_per_week = ?, price_per_month = ?, car_color = ?, mileage = ?, status = ?, image_url = ?, car_category = ? WHERE id = ?',
+      [car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileageValue, status, image_url, categoryValue, req.params.id]
+    );
 
     res.json({ success: true, message: 'Car updated successfully' });
   } catch (error) {
     console.error('Error updating car:', error);
+    // Delete uploaded file if update failed
+    if (req.file) {
+      fs.unlinkSync(path.join(uploadsDir, req.file.filename));
+    }
     res.status(500).json({ success: false, error: 'Failed to update car' });
   }
 });
@@ -806,7 +907,7 @@ app.patch('/api/rentals/:id/complete', async (req, res) => {
 });
 
 // Contact form submission
-app.post('/api/contact', verifyRecaptcha, async (req, res) => {
+app.post('/api/contact', verifyTurnstile, async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
@@ -823,7 +924,7 @@ app.post('/api/contact', verifyRecaptcha, async (req, res) => {
 });
 
 // Get all contact messages (admin endpoint)
-app.get('/api/contact-messages', async (req, res) => {
+app.get('/api/contact-messages', authenticateToken, async (req, res) => {
   try {
     const [rows] = await promisePool.query(`
       SELECT
@@ -844,7 +945,7 @@ app.get('/api/contact-messages', async (req, res) => {
 });
 
 // Update contact message status (admin endpoint)
-app.patch('/api/contact-messages/:id/status', async (req, res) => {
+app.patch('/api/contact-messages/:id/status', authenticateToken, async (req, res) => {
   try {
     const { status } = req.body;
     const [result] = await promisePool.query(
@@ -868,26 +969,34 @@ app.post('/api/bookings', upload.fields([
   { name: 'idDocument', maxCount: 1 },
   { name: 'passportDocument', maxCount: 1 }
 ]), async (req, res) => {
-  // Verify reCAPTCHA for multipart form data
-  const recaptchaToken = req.body.recaptchaToken;
-  if (!recaptchaToken) {
-    return res.status(400).json({ success: false, error: 'reCAPTCHA token is required' });
+  // Verify Turnstile for multipart form data
+  const turnstileToken = req.body.turnstileToken;
+  if (!turnstileToken) {
+    return res.status(400).json({ success: false, error: 'Turnstile token is required' });
   }
 
   try {
-    const recaptchaResponse = await axios.post('https://www.google.com/recaptcha/api/siteverify', null, {
-      params: {
-        secret: process.env.RECAPTCHA_SECRET_KEY,
-        response: recaptchaToken
+    const turnstileResponse = await axios.post('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      secret: process.env.TURNSTILE_SECRET_KEY,
+      response: turnstileToken,
+      remoteip: req.ip || req.connection.remoteAddress
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
       }
     });
 
-    if (!recaptchaResponse.data.success) {
-      return res.status(400).json({ success: false, error: 'reCAPTCHA verification failed' });
+    if (!turnstileResponse.data.success) {
+      console.error('Turnstile verification failed:', turnstileResponse.data);
+      return res.status(400).json({
+        success: false,
+        error: 'Turnstile verification failed',
+        errors: turnstileResponse.data['error-codes']
+      });
     }
   } catch (error) {
-    console.error('reCAPTCHA verification error:', error);
-    return res.status(500).json({ success: false, error: 'reCAPTCHA verification error' });
+    console.error('Turnstile verification error:', error);
+    return res.status(500).json({ success: false, error: 'Turnstile verification error' });
   }
 
   const connection = await promisePool.getConnection();
@@ -960,12 +1069,12 @@ app.post('/api/bookings', upload.fields([
       ]
     );
 
-    // Update car status to rented
-    await connection.query('UPDATE cars SET status = ? WHERE id = ?', ['rented', car.id]);
+    // DO NOT mark car as rented yet - only after admin approval
+    // Car status remains 'available' until admin approves the booking
 
     await connection.commit();
 
-    // Fetch complete booking data for emails
+    // Fetch complete booking data for admin notification email ONLY
     const [customerData] = await connection.query('SELECT * FROM customers WHERE id = ?', [customer_id]);
     const [carData] = await connection.query('SELECT * FROM cars WHERE id = ?', [car.id]);
 
@@ -981,19 +1090,18 @@ app.post('/api/bookings', upload.fields([
       passport_document: passportDocumentPath
     };
 
-    // Send emails asynchronously (don't wait for them)
-    Promise.all([
-      sendCustomerConfirmationEmail(bookingEmailData, customerData[0], carData[0]),
-      sendAdminNotificationEmail(bookingEmailData, customerData[0], carData[0])
-    ]).then(() => {
-      console.log('Booking confirmation emails sent successfully');
-    }).catch((error) => {
-      console.error('Error sending booking emails:', error);
-    });
+    // Send ONLY admin notification email - customer email will be sent after approval
+    sendAdminNotificationEmail(bookingEmailData, customerData[0], carData[0])
+      .then(() => {
+        console.log('Admin notification email sent successfully');
+      })
+      .catch((error) => {
+        console.error('Error sending admin notification email:', error);
+      });
 
     res.status(201).json({
       success: true,
-      message: 'Booking created successfully',
+      message: 'Booking request submitted successfully. Please wait for admin confirmation.',
       rental_id: rentalResult.insertId
     });
   } catch (error) {
@@ -1015,7 +1123,7 @@ app.post('/api/bookings', upload.fields([
 });
 
 // Get all bookings (admin endpoint)
-app.get('/api/bookings', async (req, res) => {
+app.get('/api/bookings', authenticateToken, async (req, res) => {
   try {
     const [rows] = await promisePool.query(`
       SELECT
@@ -1150,30 +1258,85 @@ app.get('/api/bookings/:id', async (req, res) => {
   }
 });
 
-// Update booking status
-app.patch('/api/bookings/:id/status', async (req, res) => {
+// Update booking status (admin endpoint)
+app.patch('/api/bookings/:id/status', authenticateToken, async (req, res) => {
   const connection = await promisePool.getConnection();
 
   try {
     await connection.beginTransaction();
 
     const { status } = req.body;
-    const [rental] = await connection.query('SELECT car_id FROM rentals WHERE id = ?', [req.params.id]);
 
-    if (rental.length === 0) {
+    // Get full booking details including customer and car information
+    const [bookingRows] = await connection.query(`
+      SELECT
+        r.*,
+        c.full_name, c.email, c.phone, c.address, c.driver_license,
+        cars.car_barnd, cars.car_type, cars.car_model, cars.car_num, cars.car_color
+      FROM rentals r
+      JOIN customers c ON r.customer_id = c.id
+      JOIN cars ON r.car_id = cars.id
+      WHERE r.id = ?
+    `, [req.params.id]);
+
+    if (bookingRows.length === 0) {
       throw new Error('Booking not found');
     }
 
+    const booking = bookingRows[0];
+
+    // Update booking status
     await connection.query('UPDATE rentals SET status = ? WHERE id = ?', [status, req.params.id]);
 
     // Update car status based on rental status
     if (status === 'completed' || status === 'cancelled') {
-      await connection.query('UPDATE cars SET status = ? WHERE id = ?', ['available', rental[0].car_id]);
+      await connection.query('UPDATE cars SET status = ? WHERE id = ?', ['available', booking.car_id]);
     } else if (status === 'active') {
-      await connection.query('UPDATE cars SET status = ? WHERE id = ?', ['rented', rental[0].car_id]);
+      // Admin approved the booking - mark car as rented
+      await connection.query('UPDATE cars SET status = ? WHERE id = ?', ['rented', booking.car_id]);
     }
 
     await connection.commit();
+
+    // If status is changed to 'active', send confirmation email to customer
+    if (status === 'active') {
+      const customerData = {
+        full_name: booking.full_name,
+        email: booking.email,
+        phone: booking.phone,
+        address: booking.address,
+        driver_license: booking.driver_license
+      };
+
+      const carData = {
+        car_barnd: booking.car_barnd,
+        car_type: booking.car_type,
+        car_model: booking.car_model,
+        car_num: booking.car_num,
+        car_color: booking.car_color
+      };
+
+      const bookingEmailData = {
+        rental_id: booking.id,
+        rental_start: booking.rental_start,
+        rental_end: booking.rental_end,
+        rental_type: booking.rental_type,
+        total_price: booking.total_price,
+        insurance_type: booking.insurance_type,
+        additional_services: booking.additional_services,
+        id_document: booking.id_document,
+        passport_document: booking.passport_document
+      };
+
+      // Send confirmation email to customer asynchronously
+      sendCustomerConfirmationEmail(bookingEmailData, customerData, carData)
+        .then(() => {
+          console.log(`Confirmation email sent to customer for booking #${booking.id}`);
+        })
+        .catch((error) => {
+          console.error('Error sending customer confirmation email:', error);
+        });
+    }
 
     res.json({ success: true, message: 'Booking status updated successfully' });
   } catch (error) {
@@ -1186,7 +1349,7 @@ app.patch('/api/bookings/:id/status', async (req, res) => {
 });
 
 // Admin statistics endpoint
-app.get('/api/admin/stats', async (req, res) => {
+app.get('/api/admin/stats', authenticateToken, async (req, res) => {
   try {
     const [totalCars] = await promisePool.query('SELECT COUNT(*) as count FROM cars');
     const [availableCars] = await promisePool.query('SELECT COUNT(*) as count FROM cars WHERE status = ?', ['available']);
@@ -1254,7 +1417,7 @@ app.get('/api/reviews', async (req, res) => {
 });
 
 // Get all reviews (admin)
-app.get('/api/admin/reviews', async (req, res) => {
+app.get('/api/admin/reviews', authenticateToken, async (req, res) => {
   try {
     const [rows] = await promisePool.query(
       'SELECT * FROM reviews ORDER BY created_at DESC'
@@ -1266,8 +1429,8 @@ app.get('/api/admin/reviews', async (req, res) => {
   }
 });
 
-// Submit review (customer endpoint - pending approval) with reCAPTCHA verification
-app.post('/api/reviews/submit', verifyRecaptcha, async (req, res) => {
+// Submit review (customer endpoint - pending approval) with Turnstile verification
+app.post('/api/reviews/submit', verifyTurnstile, async (req, res) => {
   try {
     const { customer_name, rating, comment } = req.body;
 
@@ -1292,7 +1455,7 @@ app.post('/api/reviews/submit', verifyRecaptcha, async (req, res) => {
 });
 
 // Create review (admin)
-app.post('/api/reviews', async (req, res) => {
+app.post('/api/reviews', authenticateToken, async (req, res) => {
   try {
     const { customer_name, rating, comment, is_featured, status } = req.body;
 
@@ -1309,7 +1472,7 @@ app.post('/api/reviews', async (req, res) => {
 });
 
 // Update review (admin)
-app.put('/api/reviews/:id', async (req, res) => {
+app.put('/api/reviews/:id', authenticateToken, async (req, res) => {
   try {
     const { customer_name, rating, comment, is_featured, status } = req.body;
 
@@ -1330,7 +1493,7 @@ app.put('/api/reviews/:id', async (req, res) => {
 });
 
 // Delete review (admin)
-app.delete('/api/reviews/:id', async (req, res) => {
+app.delete('/api/reviews/:id', authenticateToken, async (req, res) => {
   try {
     const [result] = await promisePool.query('DELETE FROM reviews WHERE id = ?', [req.params.id]);
 
@@ -1346,8 +1509,13 @@ app.delete('/api/reviews/:id', async (req, res) => {
 });
 
 // Serve React app for all other routes (production only)
+// IMPORTANT: This must be the LAST route, and must NOT match /api/* or /uploads/* routes
 if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
+  // Serve static files from dist folder
+  app.use(express.static(path.join(__dirname, 'dist')));
+
+  // Only serve index.html for non-API routes (catch-all for client-side routing)
+  app.get(/^(?!\/api|\/uploads).*$/, (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
   });
 }

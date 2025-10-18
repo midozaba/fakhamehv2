@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Loader2 } from "lucide-react";
-import ReCAPTCHA from 'react-google-recaptcha';
+import Turnstile from "react-turnstile";
 import { useTranslation } from "../utils/translations";
 import { useApp } from "../context/AppContext";
 import { getContactSchema } from "../utils/validationSchemas";
@@ -15,14 +15,20 @@ const ContactUs = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [visibleSections, setVisibleSections] = useState(new Set());
   const sectionRefs = useRef([]);
-  const contactRecaptchaRef = useRef(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileError, setTurnstileError] = useState(false);
+  const [turnstileKey, setTurnstileKey] = useState(0);
+  const [formValidated, setFormValidated] = useState(false);
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   // React Hook Form with Yup validation
   const {
     register,
     handleSubmit: handleFormSubmit,
     formState: { errors },
-    reset
+    reset,
+    trigger,
+    getValues
   } = useForm({
     resolver: yupResolver(getContactSchema(language)),
     mode: "onChange" // Real-time validation
@@ -73,12 +79,41 @@ const ContactUs = () => {
     }
   };
 
+  // Validate form before showing Turnstile
+  const validateForm = async () => {
+    const { toast } = await import('react-toastify');
+
+    // Trigger validation for all fields
+    const isValid = await trigger();
+
+    if (!isValid) {
+      toast.error(language === 'ar'
+        ? 'يرجى تصحيح الأخطاء في النموذج'
+        : 'Please correct the errors in the form', {
+        autoClose: 3000
+      });
+      return;
+    }
+
+    // Validation passed
+    setFormValidated(true);
+    toast.success(language === 'ar'
+      ? 'تم التحقق من النموذج بنجاح! يرجى إكمال التحقق الأمني.'
+      : 'Form validated successfully! Please complete security verification.', {
+      autoClose: 3000
+    });
+
+    // Scroll to Turnstile section
+    setTimeout(() => {
+      document.getElementById('contact-turnstile-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  };
+
   const onSubmit = async (formData) => {
-    // Validate reCAPTCHA
-    const recaptchaToken = contactRecaptchaRef.current?.getValue();
-    if (!recaptchaToken) {
+    // Validate Turnstile
+    if (!turnstileToken) {
       const { toast } = await import('react-toastify');
-      toast.error(language === 'ar' ? 'يرجى إكمال التحقق من reCAPTCHA' : 'Please complete the reCAPTCHA verification');
+      toast.error(language === 'ar' ? 'يرجى إكمال التحقق من الأمان' : 'Please complete the security verification');
       return;
     }
 
@@ -89,7 +124,7 @@ const ContactUs = () => {
       const { toast } = await import('react-toastify');
 
       // Submit using API service (with automatic retry)
-      await api.contact.send({ ...formData, recaptchaToken });
+      await api.contact.send({ ...formData, turnstileToken });
 
       // Scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -99,9 +134,10 @@ const ContactUs = () => {
         setShowSuccessModal(true);
       }, 300);
 
-      // Reset form and recaptcha
+      // Reset form and Turnstile token
       reset();
-      contactRecaptchaRef.current?.reset();
+      setTurnstileToken('');
+      setFormValidated(false);
 
       toast.success(language === 'ar'
         ? 'تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.'
@@ -159,7 +195,8 @@ const ContactUs = () => {
                   <input
                     type="text"
                     {...register("name")}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    disabled={formValidated}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed ${
                       errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={t("enterName")}
@@ -176,7 +213,8 @@ const ContactUs = () => {
                   <input
                     type="email"
                     {...register("email")}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    disabled={formValidated}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed ${
                       errors.email ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={t("enterEmail")}
@@ -195,7 +233,8 @@ const ContactUs = () => {
                   <input
                     type="tel"
                     {...register("phone")}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    disabled={formValidated}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed ${
                       errors.phone ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={t("enterPhone")}
@@ -212,7 +251,8 @@ const ContactUs = () => {
                   <input
                     type="text"
                     {...register("subject")}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    disabled={formValidated}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed ${
                       errors.subject ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={t("enterSubject")}
@@ -230,7 +270,8 @@ const ContactUs = () => {
                 <textarea
                   {...register("message")}
                   rows="6"
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none ${
+                  disabled={formValidated}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none disabled:bg-gray-100 disabled:cursor-not-allowed ${
                     errors.message ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder={t("enterMessage")}
@@ -240,27 +281,128 @@ const ContactUs = () => {
                 )}
               </div>
 
-              {/* reCAPTCHA */}
-              <div className="flex justify-center">
-                <ReCAPTCHA
-                  ref={contactRecaptchaRef}
-                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                  hl={language}
-                />
-              </div>
+              {/* Step 1: Validate Form Button (shown before validation) */}
+              {!formValidated && (
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800 flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
+                      </svg>
+                      {language === 'ar'
+                        ? 'انقر على "التحقق من النموذج" للمتابعة'
+                        : 'Click "Validate Form" to continue'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={validateForm}
+                    className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-4 rounded-lg text-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {language === 'ar' ? 'التحقق من النموذج والمتابعة' : 'Validate Form & Continue'}
+                  </button>
+                </div>
+              )}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`w-full py-4 px-6 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
-                  isSubmitting
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 transform hover:scale-105 active:scale-95"
-                } text-white shadow-lg`}
-              >
-                {isSubmitting && <Loader2 className="h-5 w-5 animate-spin" />}
-                {isSubmitting ? t("sending") : t("sendMessage")}
-              </button>
+              {/* Step 2 & 3: Cloudflare Turnstile and Submit (shown after validation) */}
+              {formValidated && (
+                <div id="contact-turnstile-section" className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800 flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                      </svg>
+                      {language === 'ar'
+                        ? 'تم التحقق من النموذج بنجاح! '
+                        : 'Form validated successfully! '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormValidated(false);
+                          setTurnstileToken('');
+                          setTurnstileError(false);
+                        }}
+                        className="text-green-900 underline hover:text-green-700 font-medium"
+                      >
+                        {language === 'ar' ? 'تعديل' : 'Edit'}
+                      </button>
+                    </p>
+                  </div>
+
+                  {/* Cloudflare Turnstile */}
+                  {turnstileSiteKey && (
+                    <div className="flex flex-col items-center bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        {language === 'ar' ? 'التحقق الأمني *' : 'Security Verification *'}
+                      </label>
+                      {turnstileError ? (
+                        <div className="text-center">
+                          <p className="text-red-600 mb-3 text-sm">
+                            {language === 'ar'
+                              ? 'حدث خطأ في التحقق. انقر للمحاولة مرة أخرى.'
+                              : 'Verification error. Click to try again.'}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTurnstileError(false);
+                              setTurnstileKey(prev => prev + 1);
+                            }}
+                            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+                          >
+                            {language === 'ar' ? 'إعادة المحاولة' : 'Retry'}
+                          </button>
+                        </div>
+                      ) : (
+                        <Turnstile
+                          key={turnstileKey}
+                          sitekey={turnstileSiteKey}
+                          onVerify={(token) => {
+                            setTurnstileToken(token);
+                            setTurnstileError(false);
+                          }}
+                          onError={() => {
+                            setTurnstileToken('');
+                            setTurnstileError(true);
+                          }}
+                          onExpire={() => {
+                            setTurnstileToken('');
+                          }}
+                          theme="light"
+                          language={language === 'ar' ? 'ar' : 'en'}
+                        />
+                      )}
+                      {turnstileToken && !turnstileError && (
+                        <p className="text-green-600 text-sm mt-2 flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                          </svg>
+                          {language === 'ar' ? 'تم التحقق' : 'Verified'}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Submit Button (shown after Turnstile verification OR if no Turnstile configured) */}
+                  {(!turnstileSiteKey || turnstileToken) && (
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className={`w-full py-4 px-6 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg ${
+                        isSubmitting
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 transform hover:scale-105 active:scale-95"
+                      } text-white`}
+                    >
+                      {isSubmitting && <Loader2 className="h-5 w-5 animate-spin" />}
+                      {isSubmitting ? t("sending") : t("sendMessage")}
+                    </button>
+                  )}
+                </div>
+              )}
             </form>
 
             {/* Social Media Links */}
