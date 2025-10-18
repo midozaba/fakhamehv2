@@ -13,6 +13,7 @@ import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import XLSX from 'xlsx';
 
 dotenv.config();
 
@@ -293,6 +294,46 @@ const logLoginAttempt = async (username, success, ip, userAgent) => {
   }
 };
 
+// Helper function to log admin actions
+const logAdminAction = async (adminUser, action, entityType, entityId, description, oldData, newData, req) => {
+  try {
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent') || 'Unknown';
+
+    await promisePool.execute(
+      `INSERT INTO admin_action_logs
+       (admin_id, admin_username, admin_role, action, entity_type, entity_id, description, old_data, new_data, ip_address, user_agent)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        adminUser.id,
+        adminUser.username,
+        adminUser.role,
+        action,
+        entityType,
+        entityId,
+        description,
+        oldData ? JSON.stringify(oldData) : null,
+        newData ? JSON.stringify(newData) : null,
+        ip,
+        userAgent
+      ]
+    );
+  } catch (error) {
+    console.error('Error logging admin action:', error);
+  }
+};
+
+// Middleware to check if user has developer role
+const requireDeveloperRole = (req, res, next) => {
+  if (req.user.role !== 'developer') {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Developer role required.'
+    });
+  }
+  next();
+};
+
 // Admin Login Endpoint (with rate limiting)
 app.post('/api/admin/login', loginLimiter, async (req, res) => {
   const ip = req.ip || req.connection.remoteAddress;
@@ -314,8 +355,8 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
     );
 
     if (users.length === 0) {
-      // Log failed attempt (temporarily disabled for debugging)
-      // await logLoginAttempt(username, false, ip, userAgent);
+      // Log failed attempt
+      await logLoginAttempt(username, false, ip, userAgent);
       return res.status(401).json({ success: false, message: 'Invalid username or password' });
     }
 
@@ -325,8 +366,8 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
-      // Log failed attempt (temporarily disabled for debugging)
-      // await logLoginAttempt(username, false, ip, userAgent);
+      // Log failed attempt
+      await logLoginAttempt(username, false, ip, userAgent);
       return res.status(401).json({ success: false, message: 'Invalid username or password' });
     }
 
@@ -336,8 +377,20 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
       [user.id]
     );
 
-    // Log successful attempt (temporarily disabled for debugging)
-    // await logLoginAttempt(username, true, ip, userAgent);
+    // Log successful login attempt
+    await logLoginAttempt(username, true, ip, userAgent);
+
+    // Log admin action for successful login
+    await logAdminAction(
+      { id: user.id, username: user.username, role: user.role },
+      'LOGIN',
+      null,
+      null,
+      `User ${username} logged in successfully`,
+      null,
+      null,
+      req
+    );
 
     // Generate JWT token
     const token = jwt.sign(
@@ -372,8 +425,8 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    // Log failed attempt (temporarily disabled for debugging)
-    // await logLoginAttempt(req.body.username || 'unknown', false, ip, userAgent);
+    // Log failed attempt
+    await logLoginAttempt(req.body.username || 'unknown', false, ip, userAgent);
     res.status(500).json({ success: false, message: 'Login failed. Please try again.', error: error.message });
   }
 });
@@ -391,13 +444,36 @@ app.get('/api/admin/verify', authenticateToken, (req, res) => {
 });
 
 // Logout Endpoint (clears cookie)
-app.post('/api/admin/logout', (req, res) => {
-  res.clearCookie('adminToken', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' // Match the login cookie settings
-  });
-  res.json({ success: true, message: 'Logged out successfully' });
+app.post('/api/admin/logout', authenticateToken, async (req, res) => {
+  try {
+    // Log admin action for logout
+    await logAdminAction(
+      req.user,
+      'LOGOUT',
+      null,
+      null,
+      `User ${req.user.username} logged out`,
+      null,
+      null,
+      req
+    );
+
+    res.clearCookie('adminToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' // Match the login cookie settings
+    });
+    res.json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    // Still clear cookie even if logging fails
+    res.clearCookie('adminToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    });
+    res.json({ success: true, message: 'Logged out successfully' });
+  }
 });
 
 // ==================== END ADMIN AUTHENTICATION ====================
@@ -684,11 +760,27 @@ app.get('/api/cars/status/available', async (req, res) => {
 // Delete car (admin endpoint)
 app.delete('/api/cars/:id', authenticateToken, async (req, res) => {
   try {
+    // Get car data before deletion for logging
+    const [cars] = await promisePool.query('SELECT * FROM cars WHERE id = ?', [req.params.id]);
+    const oldCarData = cars[0];
+
     const [result] = await promisePool.query('DELETE FROM cars WHERE id = ?', [req.params.id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, error: 'Car not found' });
     }
+
+    // Log the deletion
+    await logAdminAction(
+      req.user,
+      'DELETE',
+      'car',
+      parseInt(req.params.id),
+      `Deleted car: ${oldCarData?.car_barnd} ${oldCarData?.car_model} (${oldCarData?.car_num})`,
+      oldCarData,
+      null,
+      req
+    );
 
     res.json({ success: true, message: 'Car deleted successfully' });
   } catch (error) {
@@ -715,6 +807,26 @@ app.post('/api/cars', authenticateToken, upload.single('carImage'), async (req, 
       [car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileageValue, statusValue, image_url, categoryValue]
     );
 
+    const newCarData = {
+      id: result.insertId,
+      car_barnd, car_type, car_model, car_num,
+      price_per_day, price_per_week, price_per_month,
+      car_color, mileage: mileageValue, status: statusValue,
+      image_url, car_category: categoryValue
+    };
+
+    // Log the creation
+    await logAdminAction(
+      req.user,
+      'CREATE',
+      'car',
+      result.insertId,
+      `Created car: ${car_barnd} ${car_model} (${car_num})`,
+      null,
+      newCarData,
+      req
+    );
+
     res.status(201).json({ success: true, message: 'Car created successfully', id: result.insertId });
   } catch (error) {
     console.error('Error creating car:', error);
@@ -731,8 +843,8 @@ app.put('/api/cars/:id', authenticateToken, upload.single('carImage'), async (re
   try {
     const { car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileage, status, car_category } = req.body;
 
-    // Get current car to check for old image
-    const [currentCar] = await promisePool.query('SELECT image_url FROM cars WHERE id = ?', [req.params.id]);
+    // Get current car to check for old image and for logging
+    const [currentCar] = await promisePool.query('SELECT * FROM cars WHERE id = ?', [req.params.id]);
 
     if (currentCar.length === 0) {
       // Delete uploaded file if car not found
@@ -762,6 +874,25 @@ app.put('/api/cars/:id', authenticateToken, upload.single('carImage'), async (re
     const [result] = await promisePool.query(
       'UPDATE cars SET car_barnd = ?, car_type = ?, car_model = ?, car_num = ?, price_per_day = ?, price_per_week = ?, price_per_month = ?, car_color = ?, mileage = ?, status = ?, image_url = ?, car_category = ? WHERE id = ?',
       [car_barnd, car_type, car_model, car_num, price_per_day, price_per_week, price_per_month, car_color, mileageValue, status, image_url, categoryValue, req.params.id]
+    );
+
+    const newCarData = {
+      car_barnd, car_type, car_model, car_num,
+      price_per_day, price_per_week, price_per_month,
+      car_color, mileage: mileageValue, status,
+      image_url, car_category: categoryValue
+    };
+
+    // Log the update
+    await logAdminAction(
+      req.user,
+      'UPDATE',
+      'car',
+      parseInt(req.params.id),
+      `Updated car: ${car_barnd} ${car_model} (${car_num})`,
+      currentCar[0],
+      newCarData,
+      req
     );
 
     res.json({ success: true, message: 'Car updated successfully' });
@@ -948,6 +1079,11 @@ app.get('/api/contact-messages', authenticateToken, async (req, res) => {
 app.patch('/api/contact-messages/:id/status', authenticateToken, async (req, res) => {
   try {
     const { status } = req.body;
+
+    // Get old status for logging
+    const [messages] = await promisePool.query('SELECT status FROM contact_messages WHERE id = ?', [req.params.id]);
+    const oldStatus = messages[0]?.status;
+
     const [result] = await promisePool.query(
       'UPDATE contact_messages SET status = ? WHERE id = ?',
       [status, req.params.id]
@@ -956,6 +1092,18 @@ app.patch('/api/contact-messages/:id/status', authenticateToken, async (req, res
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, error: 'Message not found' });
     }
+
+    // Log the status change
+    await logAdminAction(
+      req.user,
+      'STATUS_CHANGE',
+      'message',
+      parseInt(req.params.id),
+      `Changed message #${req.params.id} status from "${oldStatus}" to "${status}"`,
+      { status: oldStatus },
+      { status },
+      req
+    );
 
     res.json({ success: true, message: 'Message status updated successfully' });
   } catch (error) {
@@ -1293,6 +1441,18 @@ app.patch('/api/bookings/:id/status', authenticateToken, async (req, res) => {
 
     await connection.commit();
 
+    // Log the status change
+    await logAdminAction(
+      req.user,
+      'STATUS_CHANGE',
+      'booking',
+      parseInt(req.params.id),
+      `Changed booking #${req.params.id} status from "${booking.status}" to "${status}"`,
+      { status: booking.status },
+      { status },
+      req
+    );
+
     // If status is changed to 'active', send confirmation email to customer
     if (status === 'active') {
       const customerData = {
@@ -1459,6 +1619,25 @@ app.post('/api/reviews', authenticateToken, async (req, res) => {
       [customer_name, rating, comment, is_featured || false, status || 'approved']
     );
 
+    const newReviewData = {
+      id: result.insertId,
+      customer_name, rating, comment,
+      is_featured: is_featured || false,
+      status: status || 'approved'
+    };
+
+    // Log the creation
+    await logAdminAction(
+      req.user,
+      'CREATE',
+      'review',
+      result.insertId,
+      `Created review by ${customer_name} with ${rating} stars`,
+      null,
+      newReviewData,
+      req
+    );
+
     res.status(201).json({ success: true, message: 'Review created successfully', id: result.insertId });
   } catch (error) {
     console.error('Error creating review:', error);
@@ -1471,6 +1650,10 @@ app.put('/api/reviews/:id', authenticateToken, async (req, res) => {
   try {
     const { customer_name, rating, comment, is_featured, status } = req.body;
 
+    // Get old review data for logging
+    const [reviews] = await promisePool.query('SELECT * FROM reviews WHERE id = ?', [req.params.id]);
+    const oldReviewData = reviews[0];
+
     const [result] = await promisePool.query(
       'UPDATE reviews SET customer_name = ?, rating = ?, comment = ?, is_featured = ?, status = ? WHERE id = ?',
       [customer_name, rating, comment, is_featured, status, req.params.id]
@@ -1479,6 +1662,22 @@ app.put('/api/reviews/:id', authenticateToken, async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, error: 'Review not found' });
     }
+
+    const newReviewData = {
+      customer_name, rating, comment, is_featured, status
+    };
+
+    // Log the update
+    await logAdminAction(
+      req.user,
+      'UPDATE',
+      'review',
+      parseInt(req.params.id),
+      `Updated review #${req.params.id} by ${customer_name}`,
+      oldReviewData,
+      newReviewData,
+      req
+    );
 
     res.json({ success: true, message: 'Review updated successfully' });
   } catch (error) {
@@ -1490,11 +1689,27 @@ app.put('/api/reviews/:id', authenticateToken, async (req, res) => {
 // Delete review (admin)
 app.delete('/api/reviews/:id', authenticateToken, async (req, res) => {
   try {
+    // Get review data before deletion for logging
+    const [reviews] = await promisePool.query('SELECT * FROM reviews WHERE id = ?', [req.params.id]);
+    const oldReviewData = reviews[0];
+
     const [result] = await promisePool.query('DELETE FROM reviews WHERE id = ?', [req.params.id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, error: 'Review not found' });
     }
+
+    // Log the deletion
+    await logAdminAction(
+      req.user,
+      'DELETE',
+      'review',
+      parseInt(req.params.id),
+      `Deleted review #${req.params.id} by ${oldReviewData?.customer_name}`,
+      oldReviewData,
+      null,
+      req
+    );
 
     res.json({ success: true, message: 'Review deleted successfully' });
   } catch (error) {
@@ -1502,6 +1717,243 @@ app.delete('/api/reviews/:id', authenticateToken, async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to delete review' });
   }
 });
+
+// ==================== DEVELOPER ROLE ENDPOINTS ====================
+
+// Get all admin users (developer only)
+app.get('/api/admin/users', authenticateToken, requireDeveloperRole, async (req, res) => {
+  try {
+    const [users] = await promisePool.query(
+      'SELECT id, username, full_name, role, created_at, last_login, is_active FROM admin_users ORDER BY created_at DESC'
+    );
+    res.json({ success: true, data: users });
+  } catch (error) {
+    console.error('Error fetching admin users:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch admin users' });
+  }
+});
+
+// Get action logs with filtering (developer only)
+app.get('/api/admin/action-logs', authenticateToken, requireDeveloperRole, async (req, res) => {
+  try {
+    const { startDate, endDate, adminId, action, entityType, limit = 100, offset = 0 } = req.query;
+
+    let query = 'SELECT * FROM admin_action_logs WHERE 1=1';
+    const params = [];
+
+    if (startDate) {
+      query += ' AND created_at >= ?';
+      params.push(startDate);
+    }
+
+    if (endDate) {
+      query += ' AND created_at <= ?';
+      params.push(endDate);
+    }
+
+    if (adminId) {
+      query += ' AND admin_id = ?';
+      params.push(adminId);
+    }
+
+    if (action) {
+      query += ' AND action = ?';
+      params.push(action);
+    }
+
+    if (entityType) {
+      query += ' AND entity_type = ?';
+      params.push(entityType);
+    }
+
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    params.push(parseInt(limit), parseInt(offset));
+
+    const [logs] = await promisePool.query(query, params);
+
+    // Get total count for pagination
+    let countQuery = 'SELECT COUNT(*) as total FROM admin_action_logs WHERE 1=1';
+    const countParams = [];
+
+    if (startDate) {
+      countQuery += ' AND created_at >= ?';
+      countParams.push(startDate);
+    }
+
+    if (endDate) {
+      countQuery += ' AND created_at <= ?';
+      countParams.push(endDate);
+    }
+
+    if (adminId) {
+      countQuery += ' AND admin_id = ?';
+      countParams.push(adminId);
+    }
+
+    if (action) {
+      countQuery += ' AND action = ?';
+      countParams.push(action);
+    }
+
+    if (entityType) {
+      countQuery += ' AND entity_type = ?';
+      countParams.push(entityType);
+    }
+
+    const [countResult] = await promisePool.query(countQuery, countParams);
+
+    res.json({
+      success: true,
+      data: logs,
+      total: countResult[0].total,
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+  } catch (error) {
+    console.error('Error fetching action logs:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch action logs' });
+  }
+});
+
+// Export action logs to Excel (developer only)
+app.get('/api/admin/action-logs/export', authenticateToken, requireDeveloperRole, async (req, res) => {
+  try {
+    const { startDate, endDate, adminId, action, entityType } = req.query;
+
+    let query = 'SELECT * FROM admin_action_logs WHERE 1=1';
+    const params = [];
+
+    if (startDate) {
+      query += ' AND created_at >= ?';
+      params.push(startDate);
+    }
+
+    if (endDate) {
+      query += ' AND created_at <= ?';
+      params.push(endDate);
+    }
+
+    if (adminId) {
+      query += ' AND admin_id = ?';
+      params.push(adminId);
+    }
+
+    if (action) {
+      query += ' AND action = ?';
+      params.push(action);
+    }
+
+    if (entityType) {
+      query += ' AND entity_type = ?';
+      params.push(entityType);
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const [logs] = await promisePool.query(query, params);
+
+    // Get login attempts for separate sheet
+    let loginQuery = 'SELECT * FROM login_attempts WHERE 1=1';
+    const loginParams = [];
+
+    if (startDate) {
+      loginQuery += ' AND attempted_at >= ?';
+      loginParams.push(startDate);
+    }
+
+    if (endDate) {
+      loginQuery += ' AND attempted_at <= ?';
+      loginParams.push(endDate);
+    }
+
+    loginQuery += ' ORDER BY attempted_at DESC';
+
+    const [loginAttempts] = await promisePool.query(loginQuery, loginParams);
+
+    // Create workbook
+    const workbook = XLSX.utils.book_new();
+
+    // Summary Sheet
+    const summaryData = [
+      ['Activity Report Summary'],
+      ['Generated:', new Date().toLocaleString()],
+      ['Generated By:', req.user.username],
+      ['Date Range:', startDate || 'All', 'to', endDate || 'All'],
+      [''],
+      ['Total Actions:', logs.length],
+      ['Total Login Attempts:', loginAttempts.length],
+    ];
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+
+    // Detailed Actions Sheet
+    const actionsData = logs.map(log => {
+      // Helper function to safely parse JSON data
+      const parseJsonData = (data) => {
+        if (!data) return 'N/A';
+        // If it's already an object, stringify it
+        if (typeof data === 'object') return JSON.stringify(data);
+        // If it's a string, try to parse and re-stringify
+        try {
+          return JSON.stringify(JSON.parse(data));
+        } catch (e) {
+          // If parsing fails, return as-is
+          return data;
+        }
+      };
+
+      return {
+        'ID': log.id,
+        'Timestamp': new Date(log.created_at).toLocaleString(),
+        'Admin User': log.admin_username,
+        'Role': log.admin_role,
+        'Action': log.action,
+        'Entity Type': log.entity_type || 'N/A',
+        'Entity ID': log.entity_id || 'N/A',
+        'Description': log.description,
+        'Old Data': parseJsonData(log.old_data),
+        'New Data': parseJsonData(log.new_data),
+        'IP Address': log.ip_address,
+        'User Agent': log.user_agent
+      };
+    });
+
+    if (actionsData.length > 0) {
+      const actionsSheet = XLSX.utils.json_to_sheet(actionsData);
+      XLSX.utils.book_append_sheet(workbook, actionsSheet, 'Detailed Actions');
+    }
+
+    // Login Events Sheet
+    const loginData = loginAttempts.map(attempt => ({
+      'ID': attempt.id,
+      'Timestamp': new Date(attempt.attempted_at).toLocaleString(),
+      'Username': attempt.username,
+      'Success': attempt.success ? 'Yes' : 'No',
+      'IP Address': attempt.ip_address,
+      'User Agent': attempt.user_agent
+    }));
+
+    if (loginData.length > 0) {
+      const loginSheet = XLSX.utils.json_to_sheet(loginData);
+      XLSX.utils.book_append_sheet(workbook, loginSheet, 'Login Events');
+    }
+
+    // Generate buffer
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    // Set headers for file download
+    const filename = `activity-logs-${new Date().toISOString().split('T')[0]}.xlsx`;
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    res.send(buffer);
+  } catch (error) {
+    console.error('Error exporting action logs:', error);
+    res.status(500).json({ success: false, error: 'Failed to export action logs' });
+  }
+});
+
+// ==================== END DEVELOPER ROLE ENDPOINTS ====================
 
 // Serve React app for all other routes (production only)
 // IMPORTANT: This must be the LAST route, and must NOT match /api/* or /uploads/* routes

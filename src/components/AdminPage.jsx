@@ -11,7 +11,10 @@ import {
   getAdminStats,
   createCar,
   updateCar,
-  deleteCar
+  deleteCar,
+  getAdminUsers,
+  getActionLogs,
+  exportActionLogs
 } from "../services/adminApi";
 import { getImageUrl } from "../utils/carHelpers";
 
@@ -59,6 +62,21 @@ const AdminPage = () => {
 
   // State for viewing documents
   const [viewingDocuments, setViewingDocuments] = useState(null);
+
+  // State for activity logs (developer only)
+  const [actionLogs, setActionLogs] = useState([]);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [logsFilter, setLogsFilter] = useState({
+    startDate: '',
+    endDate: '',
+    adminId: '',
+    action: '',
+    entityType: '',
+    limit: 100,
+    offset: 0
+  });
+  const [logsPagination, setLogsPagination] = useState({ total: 0, limit: 100, offset: 0 });
+  const [expandedLog, setExpandedLog] = useState(null);
 
   // Fetch dashboard stats
   const fetchStats = async () => {
@@ -147,6 +165,48 @@ const AdminPage = () => {
     }
   };
 
+  // Fetch admin users (for developer role)
+  const fetchAdminUsers = async () => {
+    try {
+      const response = await getAdminUsers();
+      if (response.success) {
+        setAdminUsers(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load admin users');
+    }
+  };
+
+  // Fetch action logs (for developer role)
+  const fetchActionLogs = async () => {
+    try {
+      setLoading(true);
+      const response = await getActionLogs(logsFilter);
+      if (response.success) {
+        setActionLogs(response.data);
+        setLogsPagination({
+          total: response.total,
+          limit: response.limit,
+          offset: response.offset
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to load activity logs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle export to Excel
+  const handleExportLogs = async () => {
+    try {
+      await exportActionLogs(logsFilter);
+      toast.success('Activity logs exported successfully');
+    } catch (error) {
+      toast.error('Failed to export activity logs');
+    }
+  };
+
   // Load current user from localStorage
   useEffect(() => {
     const user = localStorage.getItem('adminUser');
@@ -175,8 +235,18 @@ const AdminPage = () => {
       fetchCars();
     } else if (activeTab === "reviews") {
       fetchReviews();
+    } else if (activeTab === "activity-logs" && currentUser?.role === 'developer') {
+      fetchAdminUsers();
+      fetchActionLogs();
     }
   }, [activeTab, bookingsFilter, messagesFilter, reviewsFilter]);
+
+  // Reload logs when filter changes
+  useEffect(() => {
+    if (activeTab === "activity-logs" && currentUser?.role === 'developer') {
+      fetchActionLogs();
+    }
+  }, [logsFilter]);
 
   // Scroll to top and lock body scroll when modal is open
   useEffect(() => {
@@ -424,18 +494,19 @@ const AdminPage = () => {
       <div className="container mx-auto p-6">
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-lg mb-6 overflow-hidden">
-          <div className="flex border-b">
+          <div className="flex border-b overflow-x-auto">
             {[
               { id: 'dashboard', name: 'Dashboard', icon: '📊' },
               { id: 'bookings', name: 'Bookings', icon: '🚗' },
               { id: 'contacts', name: 'Messages', icon: '✉️' },
               { id: 'cars', name: 'Cars', icon: '🔧' },
-              { id: 'reviews', name: 'Reviews', icon: '⭐' }
+              { id: 'reviews', name: 'Reviews', icon: '⭐' },
+              ...(currentUser?.role === 'developer' ? [{ id: 'activity-logs', name: 'Activity Logs', icon: '📋' }] : [])
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 px-6 py-4 font-semibold transition-all ${
+                className={`flex-1 px-6 py-4 font-semibold transition-all whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-blue-900 text-white'
                     : 'text-gray-600 hover:bg-gray-50'
@@ -1035,6 +1106,268 @@ const AdminPage = () => {
                 {reviews.length === 0 && (
                   <div className="text-center py-12 bg-white rounded-xl shadow-lg">
                     <p className="text-gray-600">No reviews found</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Activity Logs Tab (Developer Only) */}
+        {activeTab === "activity-logs" && currentUser?.role === 'developer' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Activity Logs</h2>
+              <button
+                onClick={handleExportLogs}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition-all flex items-center gap-2"
+              >
+                <span>📥</span>
+                Export to Excel
+              </button>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+              <h3 className="font-semibold text-lg mb-4">Filters</h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                  <input
+                    type="datetime-local"
+                    value={logsFilter.startDate}
+                    onChange={(e) => setLogsFilter({...logsFilter, startDate: e.target.value, offset: 0})}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                  <input
+                    type="datetime-local"
+                    value={logsFilter.endDate}
+                    onChange={(e) => setLogsFilter({...logsFilter, endDate: e.target.value, offset: 0})}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Admin User</label>
+                  <select
+                    value={logsFilter.adminId}
+                    onChange={(e) => setLogsFilter({...logsFilter, adminId: e.target.value, offset: 0})}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All Users</option>
+                    {adminUsers.map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.full_name} ({user.username})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Action Type</label>
+                  <select
+                    value={logsFilter.action}
+                    onChange={(e) => setLogsFilter({...logsFilter, action: e.target.value, offset: 0})}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All Actions</option>
+                    <option value="LOGIN">Login</option>
+                    <option value="LOGOUT">Logout</option>
+                    <option value="CREATE">Create</option>
+                    <option value="UPDATE">Update</option>
+                    <option value="DELETE">Delete</option>
+                    <option value="STATUS_CHANGE">Status Change</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Entity Type</label>
+                  <select
+                    value={logsFilter.entityType}
+                    onChange={(e) => setLogsFilter({...logsFilter, entityType: e.target.value, offset: 0})}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All Entities</option>
+                    <option value="car">Car</option>
+                    <option value="booking">Booking</option>
+                    <option value="review">Review</option>
+                    <option value="message">Message</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Results Per Page</label>
+                  <select
+                    value={logsFilter.limit}
+                    onChange={(e) => setLogsFilter({...logsFilter, limit: parseInt(e.target.value), offset: 0})}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                    <option value="500">500</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-4">
+                <button
+                  onClick={() => setLogsFilter({
+                    startDate: '',
+                    endDate: '',
+                    adminId: '',
+                    action: '',
+                    entityType: '',
+                    limit: 100,
+                    offset: 0
+                  })}
+                  className="text-blue-600 hover:text-blue-800 font-semibold"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+
+            {/* Activity Logs Table */}
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+                <p className="mt-4 text-gray-600">Loading logs...</p>
+              </div>
+            ) : (
+              <div>
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin User</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entity</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {actionLogs.map((log) => (
+                          <React.Fragment key={log.id}>
+                            <tr className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {new Date(log.created_at).toLocaleString()}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">{log.admin_username}</div>
+                                <div className="text-sm text-gray-500">{log.admin_role}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                  log.action === 'CREATE' ? 'bg-green-100 text-green-800' :
+                                  log.action === 'UPDATE' ? 'bg-blue-100 text-blue-800' :
+                                  log.action === 'DELETE' ? 'bg-red-100 text-red-800' :
+                                  log.action === 'LOGIN' ? 'bg-purple-100 text-purple-800' :
+                                  log.action === 'LOGOUT' ? 'bg-gray-100 text-gray-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {log.action}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {log.entity_type ? (
+                                  <span className="capitalize">{log.entity_type} #{log.entity_id}</span>
+                                ) : (
+                                  <span className="text-gray-400">N/A</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                {log.description}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                <button
+                                  onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
+                                  className="text-blue-600 hover:text-blue-800 font-semibold"
+                                >
+                                  {expandedLog === log.id ? 'Hide' : 'View'}
+                                </button>
+                              </td>
+                            </tr>
+                            {expandedLog === log.id && (
+                              <tr>
+                                <td colSpan="6" className="px-6 py-4 bg-gray-50">
+                                  <div className="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                      <h4 className="font-semibold text-sm text-gray-700 mb-2">Old Data</h4>
+                                      <pre className="bg-white p-3 rounded border text-xs overflow-auto max-h-64">
+                                        {log.old_data ? JSON.stringify(
+                                          typeof log.old_data === 'string' ? JSON.parse(log.old_data) : log.old_data,
+                                          null,
+                                          2
+                                        ) : 'N/A'}
+                                      </pre>
+                                    </div>
+                                    <div>
+                                      <h4 className="font-semibold text-sm text-gray-700 mb-2">New Data</h4>
+                                      <pre className="bg-white p-3 rounded border text-xs overflow-auto max-h-64">
+                                        {log.new_data ? JSON.stringify(
+                                          typeof log.new_data === 'string' ? JSON.parse(log.new_data) : log.new_data,
+                                          null,
+                                          2
+                                        ) : 'N/A'}
+                                      </pre>
+                                    </div>
+                                  </div>
+                                  <div className="mt-4 grid md:grid-cols-2 gap-4">
+                                    <div>
+                                      <span className="font-semibold text-sm text-gray-700">IP Address: </span>
+                                      <span className="text-sm text-gray-900">{log.ip_address}</span>
+                                    </div>
+                                    <div>
+                                      <span className="font-semibold text-sm text-gray-700">User Agent: </span>
+                                      <span className="text-sm text-gray-900">{log.user_agent}</span>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Pagination */}
+                <div className="bg-white rounded-xl shadow-lg p-4 flex justify-between items-center">
+                  <div className="text-sm text-gray-600">
+                    Showing {logsPagination.offset + 1} to {Math.min(logsPagination.offset + logsPagination.limit, logsPagination.total)} of {logsPagination.total} logs
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setLogsFilter({...logsFilter, offset: Math.max(0, logsFilter.offset - logsFilter.limit)})}
+                      disabled={logsFilter.offset === 0}
+                      className={`px-4 py-2 rounded-lg font-semibold ${
+                        logsFilter.offset === 0
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setLogsFilter({...logsFilter, offset: logsFilter.offset + logsFilter.limit})}
+                      disabled={logsFilter.offset + logsFilter.limit >= logsPagination.total}
+                      className={`px-4 py-2 rounded-lg font-semibold ${
+                        logsFilter.offset + logsFilter.limit >= logsPagination.total
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+
+                {actionLogs.length === 0 && (
+                  <div className="text-center py-12 bg-white rounded-xl shadow-lg">
+                    <p className="text-gray-600">No activity logs found</p>
                   </div>
                 )}
               </div>
