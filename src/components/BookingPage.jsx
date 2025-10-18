@@ -533,10 +533,10 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
               <div className="space-y-3">
                 {/* Regular Services */}
                 {[
-                  { id: 'phone', name: t('mobilePhone'), priceJOD: 3, icon: Phone },
-                  { id: 'wifi', name: t('wifi'), priceJOD: 2, icon: Wifi },
-                  { id: 'gps', name: t('gps'), priceJOD: 2, icon: MapPin },
-                  { id: 'childSeat', name: t('childSeat'), priceJOD: 1, icon: Shield }
+                  { id: 'phone', name: t('mobilePhone'), icon: Phone },
+                  { id: 'wifi', name: t('wifi'), icon: Wifi },
+                  { id: 'gps', name: t('gps'), icon: MapPin },
+                  { id: 'childSeat', name: t('childSeat'), icon: Shield }
                 ].map(service => (
                   <label key={service.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                     <input
@@ -551,10 +551,7 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
                       }}
                     />
                     <service.icon className="text-blue-900" size={20} />
-                    <div className="flex-1 flex justify-between items-center">
-                      <span>{service.name}</span>
-                      <span className="text-blue-900 font-bold">{currencySymbol} {convertPrice(service.priceJOD)}/day</span>
-                    </div>
+                    <span>{service.name}</span>
                   </label>
                 ))}
               </div>
