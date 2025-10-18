@@ -33,12 +33,14 @@ const CarsPage = () => {
       setError(null);
       // Use API service with automatic retry and caching
       const data = await api.cars.getAll();
-      setCars(data);
+      // Ensure data is always an array
+      setCars(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err);
       const errorMsg = getErrorMessage(err, language);
       toast.error(errorMsg);
       console.error('Error loading cars:', err);
+      setCars([]); // Ensure cars is an empty array on error
     } finally {
       setLoading(false);
     }
@@ -168,7 +170,11 @@ const CarsPage = () => {
                   <div
                     key={car.car_id}
                     ref={addToRefs}
-                    className={`relative bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-700 group cursor-pointer ${
+                    onClick={() => {
+                      setSelectedCar(car);
+                      navigate('/booking');
+                    }}
+                    className={`relative bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-700 group cursor-pointer touch-manipulation active:scale-98 ${
                       visibleCards.has(idx)
                         ? 'opacity-100 scale-100'
                         : 'opacity-0 scale-75'
@@ -178,7 +184,7 @@ const CarsPage = () => {
                     {/* Car Image */}
                     <div className="w-full aspect-[16/9]">
                       <img
-                        src={getCarImage(car.car_barnd, car.car_type)}
+                        src={getCarImage(car.car_barnd, car.car_type, car.image_url)}
                         alt={`${car.car_barnd} ${car.car_type} ${car.car_model} for rent - Starting at ${currency === 'USD' ? '$' : 'JOD'} ${convertPrice(car.price_per_day)}/day`}
                         className="w-full h-full object-cover"
                         loading="lazy"
@@ -187,8 +193,8 @@ const CarsPage = () => {
                       />
                     </div>
 
-                    {/* Hover Overlay with Information */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-3">
+                    {/* Hover Overlay with Information - Desktop Only */}
+                    <div className="hidden md:flex absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex-col justify-end p-3 pointer-events-none">
                       <h3 className="text-lg font-bold mb-1 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                         {car.car_barnd} {car.car_type}
                       </h3>
@@ -206,11 +212,44 @@ const CarsPage = () => {
                         </div>
                       </div>
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedCar(car);
                           navigate('/booking');
                         }}
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-2 text-sm rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all font-semibold transform translate-y-4 group-hover:translate-y-0 duration-500 delay-200 shadow-lg"
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-2 text-sm rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all font-semibold transform translate-y-4 group-hover:translate-y-0 duration-500 delay-200 shadow-lg pointer-events-auto"
+                      >
+                        {t('bookNow')}
+                      </button>
+                    </div>
+
+                    {/* Mobile-Only Card Info - Always Visible */}
+                    <div className="md:hidden p-4 bg-white">
+                      <h3 className="text-lg font-bold text-gray-800 mb-1">
+                        {car.car_barnd} {car.car_type}
+                      </h3>
+                      <p className="text-gray-500 text-xs mb-2 italic">
+                        {t('orSimilar')}
+                      </p>
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="text-sm text-gray-600">
+                          <p>{t('model')}: {car.car_model}</p>
+                          <p>{t('color')}: {t(car.car_color)}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xl font-bold text-blue-900">
+                            {currencySymbol} {convertPrice(parseFloat(car.price_per_day))}
+                          </div>
+                          <span className="text-xs text-gray-500">{t('perDay')}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCar(car);
+                          navigate('/booking');
+                        }}
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-3 rounded-lg font-semibold shadow-lg active:scale-95 transition-transform touch-manipulation"
                       >
                         {t('bookNow')}
                       </button>

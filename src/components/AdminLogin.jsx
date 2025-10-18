@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import api from '../services/api';
 
 const AdminLogin = () => {
   const [formData, setFormData] = useState({
@@ -15,22 +16,14 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
+      const data = await api.admin.login(formData);
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      if (data.success) {
         // Store token in localStorage
         localStorage.setItem('adminToken', data.token);
         localStorage.setItem('adminUser', JSON.stringify(data.user));
 
-        toast.success(`Welcome ${data.user.full_name}!`);
+        toast.success(`Welcome ${data.user.full_name || data.user.username}!`);
 
         // Redirect to admin page
         navigate('/admin');
@@ -39,7 +32,7 @@ const AdminLogin = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error('Connection error. Please try again.');
+      toast.error(error.message || 'Connection error. Please try again.');
     } finally {
       setLoading(false);
     }

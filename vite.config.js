@@ -9,12 +9,13 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    // Proxy API requests to backend server
+    // Proxy API requests to backend server (only used in dev mode)
     server: {
       proxy: {
         '/api': {
-          target: 'http://localhost:3001',
+          target: env.VITE_API_URL || 'http://localhost:3001/api',
           changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, '')
         }
       }
     },

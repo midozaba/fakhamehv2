@@ -6,7 +6,10 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(curl:*)",
-      "Bash(mysql:*)"
+      "Bash(mysql:*)",
+      "Bash(npm run build:*)",
+      "Bash(scp:*)",
+      "Bash(ssh mido@192.168.1.124 \"cat ~/backend/server.js | grep -A 5 ''Serve React app''\")"
     ],
     "deny": [],
     "ask": []

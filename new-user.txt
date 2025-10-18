@@ -1,0 +1,84 @@
+
+  node -e "const bcrypt = require('bcrypt'); bcrypt.hash('admin123',
+  10).then(hash => console.log(hash));"
+
+  Copy the output - it will look something like:
+  $2b$10$ABC123XYZ...longstringhere...
+
+  ---
+  Step 2: SSH into Your Server
+
+  ssh mido@192.168.1.124
+
+  Enter your server password when prompted.
+
+  ---
+  Step 3: Connect to MySQL
+
+  mysql -u root -p
+
+  Enter your MySQL password: 1234 (from your .env file)
+
+  ---
+  Step 4: Select Database
+
+  USE alfakhama_rental;
+
+  ---
+  Step 5: Create admin_users Table (if not exists)
+
+  CREATE TABLE IF NOT EXISTS admin_users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    role ENUM('admin', 'manager', 'viewer') DEFAULT 'admin',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP NULL,
+    is_active BOOLEAN DEFAULT TRUE
+  );
+
+  Press Enter.
+
+  ---
+  Step 6: Insert Admin User
+
+  Replace YOUR_HASHED_PASSWORD_HERE with the hash you copied from Step 1:     
+
+  INSERT INTO admin_users (username, password, full_name, role)
+  VALUES ('abood', '$2b$10$5XqwXVAtsKSg1nVrzVufpewrFCaKMWenQi8RwZli4.eKBRkq9d8C2', 'Administrator', 'admin');    
+
+  Example:
+  INSERT INTO admin_users (username, password, full_name, role)
+  VALUES ('admin', '$2b$10$ABC123XYZ...', 'Administrator', 'admin');
+
+  ---
+  Step 7: Verify User was Created
+
+  SELECT id, username, full_name, role, is_active FROM admin_users;
+
+  You should see:
+  +----+----------+---------------+-------+-----------+
+  | id | username | full_name     | role  | is_active |
+  +----+----------+---------------+-------+-----------+
+  |  1 | admin    | Administrator | admin |         1 |
+  +----+----------+---------------+-------+-----------+
+
+  ---
+  Step 8: Exit MySQL
+
+  EXIT;
+
+  ---
+  Step 9: Test Login
+
+  1. Open browser: http://192.168.1.124/admin
+  2. Login with:
+    - Username: admin
+    - Password: admin123 (or whatever password you used in Step 1)
+
+  ---
+  Done! 🎉
+
+  You can now create additional users by repeating Steps 1 and 6 with
+  different usernames.

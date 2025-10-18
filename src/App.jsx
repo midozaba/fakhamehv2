@@ -66,6 +66,43 @@ const AppLayout = () => {
   const handleBookingSubmit = async () => {
     const { name, email, phone, license, street, city, country, area, postalCode, idDocument, passportDocument } = bookingData.customerInfo;
 
+    // Import toast early for validation errors
+    const { toast } = await import('react-toastify');
+
+    // Validate dates first
+    if (!bookingData.pickupDate || !bookingData.returnDate) {
+      toast.error(language === 'ar'
+        ? 'يرجى تحديد تواريخ الاستلام والإرجاع'
+        : 'Please select pickup and return dates');
+      return;
+    }
+
+    // Validate pickup/return locations
+    if (!bookingData.pickupLocation || !bookingData.returnLocation) {
+      toast.error(language === 'ar'
+        ? 'يرجى تحديد مواقع الاستلام والإرجاع'
+        : 'Please select pickup and return locations');
+      return;
+    }
+
+    // Calculate days if not already set
+    let days = bookingData.days;
+    if (!days || days < 1) {
+      const pickupDate = new Date(bookingData.pickupDate);
+      const returnDate = new Date(bookingData.returnDate);
+      days = Math.ceil((returnDate - pickupDate) / (1000 * 60 * 60 * 24));
+
+      if (days < 1) {
+        toast.error(language === 'ar'
+          ? 'تاريخ الإرجاع يجب أن يكون بعد تاريخ الاستلام'
+          : 'Return date must be after pickup date');
+        return;
+      }
+
+      // Update the days in state
+      setBookingData(prev => ({ ...prev, days }));
+    }
+
     // Validate using Yup schema
     try {
       const { getBookingSchema } = await import('./utils/validationSchemas');
@@ -91,9 +128,6 @@ const AppLayout = () => {
 
       await schema.validate(dataToValidate, { abortEarly: false });
     } catch (validationError) {
-      // Import toast for error display
-      const { toast } = await import('react-toastify');
-
       if (validationError.inner && validationError.inner.length > 0) {
         // Show first error
         toast.error(validationError.inner[0].message, { autoClose: 5000 });
@@ -112,15 +146,18 @@ const AppLayout = () => {
       // Prepare form data
       const formData = new FormData();
 
-      // Calculate pricing
+      // Calculate pricing with updated days
       const { calculatePrice } = await import('./utils/carHelpers');
-      const pricing = calculatePrice(selectedCar, bookingData);
+      const updatedBookingData = { ...bookingData, days };
+      const pricing = calculatePrice(selectedCar, updatedBookingData);
 
       const bookingPayload = {
         car: selectedCar,
         pickupDate: bookingData.pickupDate,
         returnDate: bookingData.returnDate,
-        days: bookingData.days,
+        pickupLocation: bookingData.pickupLocation,
+        returnLocation: bookingData.returnLocation,
+        days: days,
         insurance: bookingData.insurance,
         additionalServices: bookingData.additionalServices,
         customerInfo: {
@@ -141,9 +178,9 @@ const AppLayout = () => {
       formData.append('idDocument', idDocument);
       formData.append('passportDocument', passportDocument);
 
-      // Add recaptcha token if available
-      if (window.recaptchaToken) {
-        formData.append('recaptchaToken', window.recaptchaToken);
+      // Add Turnstile token if available
+      if (window.turnstileToken) {
+        formData.append('turnstileToken', window.turnstileToken);
       }
 
       // Show loading toast

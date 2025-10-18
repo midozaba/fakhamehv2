@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-// API Base URL
-const BASE_URL = 'http://localhost:3001/api';
+// API Base URL - uses environment variable (REQUIRED in production)
+const BASE_URL = import.meta.env.VITE_API_URL || (() => {
+  console.warn('VITE_API_URL not set! Using window.location for API calls.');
+  return `${window.location.protocol}//${window.location.hostname}:3001/api`;
+})();
 
 // Request timeout (10 seconds)
 const TIMEOUT = 10000;
@@ -14,6 +17,7 @@ const cache = new Map();
 const apiClient = axios.create({
   baseURL: BASE_URL,
   timeout: TIMEOUT,
+  withCredentials: true, // Include cookies in requests
   headers: {
     'Content-Type': 'application/json',
   },
@@ -24,6 +28,17 @@ apiClient.interceptors.request.use(
   (config) => {
     // Add timestamp to request
     config.metadata = { startTime: new Date() };
+
+    // Add Authorization header if token exists in localStorage
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // If sending FormData, remove Content-Type header so axios sets it automatically with boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
 
     // Log request in development
     if (process.env.NODE_ENV === 'development') {
@@ -58,10 +73,17 @@ apiClient.interceptors.response.use(
       console.error(`[API Error] ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url}`, error.message);
     }
 
-    // Retry logic for network errors and 5xx errors
+    // Don't retry requests with Turnstile tokens (they're single-use)
+    const hasFormData = originalRequest.data instanceof FormData;
+    const isTurnstileEndpoint = originalRequest.url?.includes('/bookings') ||
+                                originalRequest.url?.includes('/contact') ||
+                                originalRequest.url?.includes('/reviews/submit');
+
+    // Retry logic for network errors and 5xx errors (but not for Turnstile-protected endpoints)
     if (
       originalRequest &&
       !originalRequest._retry &&
+      !isTurnstileEndpoint &&
       (!error.response || error.response.status >= 500)
     ) {
       originalRequest._retry = true;
@@ -186,12 +208,14 @@ const api = {
     },
 
     create: async (carData) => {
+      // For FormData, let axios set the Content-Type automatically (with boundary)
       const response = await apiClient.post('/cars', carData);
       clearCache('/cars');
       return unwrapResponse(response);
     },
 
     update: async (id, carData) => {
+      // For FormData, let axios set the Content-Type automatically (with boundary)
       const response = await apiClient.put(`/cars/${id}`, carData);
       clearCache('/cars');
       return unwrapResponse(response);
@@ -217,11 +241,8 @@ const api = {
     },
 
     create: async (formData) => {
-      const response = await apiClient.post('/bookings', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      // For FormData, let axios set the Content-Type automatically (with boundary)
+      const response = await apiClient.post('/bookings', formData);
       return unwrapResponse(response);
     },
 
@@ -242,6 +263,49 @@ const api = {
       const response = await apiClient.post('/contact', contactData);
       return unwrapResponse(response);
     },
+
+    getMessages: async () => {
+      const response = await apiClient.get('/contact-messages');
+      return unwrapResponse(response, []);
+    },
+
+    updateStatus: async (id, status) => {
+      const response = await apiClient.patch(`/contact-messages/${id}/status`, { status });
+      return unwrapResponse(response);
+    },
+  },
+
+  // Reviews API
+  reviews: {
+    getAll: async () => {
+      const response = await apiClient.get('/reviews');
+      return unwrapResponse(response, []);
+    },
+
+    getAllAdmin: async () => {
+      const response = await apiClient.get('/admin/reviews');
+      return unwrapResponse(response, []);
+    },
+
+    submit: async (reviewData) => {
+      const response = await apiClient.post('/reviews/submit', reviewData);
+      return unwrapResponse(response);
+    },
+
+    create: async (reviewData) => {
+      const response = await apiClient.post('/reviews', reviewData);
+      return unwrapResponse(response);
+    },
+
+    update: async (id, reviewData) => {
+      const response = await apiClient.put(`/reviews/${id}`, reviewData);
+      return unwrapResponse(response);
+    },
+
+    delete: async (id) => {
+      const response = await apiClient.delete(`/reviews/${id}`);
+      return unwrapResponse(response);
+    },
   },
 
   // Admin API
@@ -255,6 +319,16 @@ const api = {
       const response = await apiClient.post('/admin/login', credentials);
       return unwrapResponse(response);
     },
+
+    verify: async () => {
+      const response = await apiClient.get('/admin/verify');
+      return unwrapResponse(response);
+    },
+
+    logout: async () => {
+      const response = await apiClient.post('/admin/logout');
+      return unwrapResponse(response);
+    },
   },
 
   // Utility methods
@@ -263,5 +337,10 @@ const api = {
   // Direct access to axios instance for custom requests
   client: apiClient,
 };
+
+// Expose clearCache to window for admin panel
+if (typeof window !== 'undefined') {
+  window.apiClearCache = clearCache;
+}
 
 export default api;

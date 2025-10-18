@@ -1,0 +1,686 @@
+[
+  {
+    "ser": 1,
+    "carNo": 41195,
+    "type": "هونداي",
+    "group": "H 1",
+    "color": "فيراني",
+    "model": 2018,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 2,
+    "carNo": 44706,
+    "type": "هونداي",
+    "group": "H 1",
+    "color": "فيراني",
+    "model": 2018,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 3,
+    "carNo": 47838,
+    "type": "فورد",
+    "group": "فيوجن",
+    "color": "ابيض",
+    "model": 2019,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 4,
+    "carNo": 50085,
+    "type": "هونداي",
+    "group": "I10",
+    "color": "فيراني",
+    "model": 2019,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 5,
+    "carNo": 50076,
+    "type": "هونداي",
+    "group": "اكسنت",
+    "color": "كحلي",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 6,
+    "carNo": 50067,
+    "type": "هونداي",
+    "group": "I10",
+    "color": "سلفر ميتالك",
+    "model": 2019,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 7,
+    "carNo": 50088,
+    "type": "هونداي",
+    "group": "النترا",
+    "color": "اسود",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 8,
+    "carNo": 50064,
+    "type": "هونداي",
+    "group": "النترا",
+    "color": "فيراني",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 9,
+    "carNo": 50058,
+    "type": "هونداي",
+    "group": "النترا",
+    "color": "اسود",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 10,
+    "carNo": 50073,
+    "type": "هونداي",
+    "group": "النترا",
+    "color": "احمر",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 11,
+    "carNo": 50079,
+    "type": "هونداي",
+    "group": "النترا",
+    "color": "فيراني",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 12,
+    "carNo": 50061,
+    "type": "هونداي",
+    "group": "اكسنت",
+    "color": "احمر",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 13,
+    "carNo": 50082,
+    "type": "هونداي",
+    "group": "النترا",
+    "color": "احمر",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 14,
+    "carNo": 50952,
+    "type": "فورد",
+    "group": "فيوجن",
+    "color": "ابيض",
+    "model": 2019,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 15,
+    "carNo": 51654,
+    "type": "هونداي",
+    "group": "النترا",
+    "color": "سلفر ميتالك",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 16,
+    "carNo": 51975,
+    "type": "تويوتا",
+    "group": "كامري",
+    "color": "فيراني",
+    "model": 2018,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 17,
+    "carNo": 42214,
+    "type": "تويوتا",
+    "group": "كامري",
+    "color": "شمباني",
+    "model": 2019,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 18,
+    "carNo": 42703,
+    "type": "هونداي",
+    "group": "H1",
+    "color": "ابيض",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 19,
+    "carNo": 51429,
+    "type": "هونداي",
+    "group": "H1",
+    "color": "اسود",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 20,
+    "carNo": 54088,
+    "type": "كيا",
+    "group": "سيراتو",
+    "color": "فيراني",
+    "model": 2022,
+    "carCase": "Available"
+  },
+  {
+    "ser": 21,
+    "carNo": 54085,
+    "type": "كيا",
+    "group": "سيلتوس",
+    "color": "خمري",
+    "model": 2022,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 22,
+    "carNo": 54091,
+    "type": "كيا",
+    "group": "سونيت",
+    "color": "اسود",
+    "model": 2022,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 23,
+    "carNo": 54094,
+    "type": "كيا",
+    "group": "سيلتوس",
+    "color": "اسود",
+    "model": 2022,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 24,
+    "carNo": 54103,
+    "type": "كيا",
+    "group": "بيجاس",
+    "color": "فيراني",
+    "model": 2022,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 25,
+    "carNo": 54106,
+    "type": "كيا",
+    "group": "سيلتوس",
+    "color": "خمري",
+    "model": 2022,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 26,
+    "carNo": 54109,
+    "type": "خمري",
+    "group": "سيلتوس",
+    "color": "كيا‎",
+    "model": 2022,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 27,
+    "carNo": 54097,
+    "type": "كيا",
+    "group": "سونيت",
+    "color": "لؤلؤي",
+    "model": 2022,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 28,
+    "carNo": 54112,
+    "type": "كيا",
+    "group": "سيراتو",
+    "color": "فيراني",
+    "model": 2022,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 29,
+    "carNo": 54115,
+    "type": "كيا",
+    "group": "سونيت",
+    "color": "اسود",
+    "model": 2022,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 32,
+    "carNo": 56316,
+    "type": "تويوتا",
+    "group": "كامري",
+    "color": "فيراني ميتالك",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 33,
+    "carNo": 50930,
+    "type": "تويوتا",
+    "group": "كامري",
+    "color": "فيراني ميتالك",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 34,
+    "carNo": 46388,
+    "type": "تويوتا",
+    "group": "كامري",
+    "color": "سلفر ميتالك",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 35,
+    "carNo": 72429,
+    "type": "تويوتا",
+    "group": "كامري",
+    "color": "سلفر ميتالك",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 36,
+    "carNo": 47837,
+    "type": "تويوتا",
+    "group": "كامري",
+    "color": "سلفر ميتالك",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 37,
+    "carNo": 74001,
+    "type": "اسود",
+    "group": "كابتيفا",
+    "color": "شفروليه‎",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 38,
+    "carNo": 54105,
+    "type": "فيراني",
+    "group": "كابتيفا",
+    "color": "شفروليه‎",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 39,
+    "carNo": 46896,
+    "type": "هونداي",
+    "group": "H1",
+    "color": "بني‎",
+    "model": 2019,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 40,
+    "carNo": 47105,
+    "type": "تويوتا",
+    "group": "كورو",
+    "color": "سلفر ميتالك",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 41,
+    "carNo": 96173,
+    "type": "تويوتا",
+    "group": "كورو",
+    "color": "بحري ميتالك",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 42,
+    "carNo": 53237,
+    "type": "تويوتا",
+    "group": "كورو",
+    "color": "بحري ميتالك",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 44,
+    "carNo": 49898,
+    "type": "تويوتا",
+    "group": "كورو",
+    "color": "بحري ميتالك",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 45,
+    "carNo": 58668,
+    "type": "تويوتا",
+    "group": "كورو",
+    "color": "بحري ميتالك",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 46,
+    "carNo": 72602,
+    "type": "كيا",
+    "group": "بيكانتو",
+    "color": "فضي",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 47,
+    "carNo": 52998,
+    "type": "كيا",
+    "group": "بيكانتو",
+    "color": "اسود",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 48,
+    "carNo": 55721,
+    "type": "كيا",
+    "group": "بيكانتو",
+    "color": "فضي",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 49,
+    "carNo": 50039,
+    "type": "كيا",
+    "group": "بيكانتو",
+    "color": "اسود",
+    "model": 2023,
+    "carCase": "Available"
+  },
+  {
+    "ser": 50,
+    "carNo": 49232,
+    "type": "فيراني",
+    "group": "سوناتا",
+    "color": "هونداي‎",
+    "model": 2022,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 51,
+    "carNo": 44977,
+    "type": "فيراني",
+    "group": "النترا",
+    "color": "هونداي‎",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 52,
+    "carNo": 41817,
+    "type": "هونداي",
+    "group": "H1",
+    "color": "فيراني‎",
+    "model": 2018,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 53,
+    "carNo": 53349,
+    "type": "فيراني",
+    "group": "النترا",
+    "color": "هونداي‎",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 54,
+    "carNo": 44793,
+    "type": "هونداي",
+    "group": "H1",
+    "color": "اسود‎",
+    "model": 2019,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 55,
+    "carNo": 55270,
+    "type": "سلفر",
+    "group": "اﻻلنترا",
+    "color": "هونداي‎",
+    "model": 2023,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 56,
+    "carNo": 53887,
+    "type": "هونداي",
+    "group": "سوناتا",
+    "color": "كحلي",
+    "model": 2022,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 57,
+    "carNo": 53881,
+    "type": "هونداي",
+    "group": "سوناتا",
+    "color": "احمر",
+    "model": 2022,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 58,
+    "carNo": 53890,
+    "type": "هونداي",
+    "group": "سوناتا",
+    "color": "فيراني",
+    "model": 2022,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 59,
+    "carNo": 53765,
+    "type": "اسود",
+    "group": "ستاريا",
+    "color": "هونداي‎",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 60,
+    "carNo": 48146,
+    "type": "دونغ فينج",
+    "group": "ايلوس شاين",
+    "color": "لؤلؤي ميتالك",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 61,
+    "carNo": 54411,
+    "type": "دونغ فينج",
+    "group": "ايلوس شاين",
+    "color": "لؤلؤي ميتالك",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 62,
+    "carNo": 51372,
+    "type": "هونداي",
+    "group": "H1",
+    "color": "اسود‎",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 63,
+    "carNo": 43480,
+    "type": "هونداي",
+    "group": "h1",
+    "color": "فيراني‎",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 64,
+    "carNo": 43471,
+    "type": "هونداي",
+    "group": "H1",
+    "color": "فيراني‎",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 65,
+    "carNo": 43486,
+    "type": "هونداي",
+    "group": "H1",
+    "color": "فيراني‎",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 66,
+    "carNo": 43465,
+    "type": "هوتداي",
+    "group": "H1",
+    "color": "فيراني‎",
+    "model": 2020,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 67,
+    "carNo": 92933,
+    "type": "هوتداي",
+    "group": "سوناتا",
+    "color": "خمري",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 68,
+    "carNo": 81324,
+    "type": "هونداي",
+    "group": "سوناتا",
+    "color": "فيراني ميتالك",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 69,
+    "carNo": 53396,
+    "type": "هونداي",
+    "group": "سوناتا",
+    "color": "فيراني",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 70,
+    "carNo": 99597,
+    "type": "هونداي",
+    "group": "سوناتا",
+    "color": "كحلي",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 71,
+    "carNo": 96450,
+    "type": "هونداي",
+    "group": "سوناتا",
+    "color": "خمري‎.",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 72,
+    "carNo": 51806,
+    "type": "هونداي",
+    "group": "النترا",
+    "color": "ازرق",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 73,
+    "carNo": 54698,
+    "type": "هونداي",
+    "group": "i10",
+    "color": "فيراني ميتالك",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 74,
+    "carNo": 56382,
+    "type": "هونداي",
+    "group": "ستاريا",
+    "color": "فيراني ميتالك",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 75,
+    "carNo": 99913,
+    "type": "هونداي",
+    "group": "النترا",
+    "color": "كحلي",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 76,
+    "carNo": 66470,
+    "type": "هونداي",
+    "group": "I10",
+    "color": "بترولي",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 77,
+    "carNo": 73668,
+    "type": "هونداي",
+    "group": "النترا",
+    "color": "فيراني ميتالك",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 78,
+    "carNo": 60466,
+    "type": "هونداي",
+    "group": "النترا",
+    "color": "زيتي",
+    "model": 2025,
+    "carCase": "Rented"
+  },
+  {
+    "ser": 79,
+    "carNo": 75083,
+    "type": "هونداي",
+    "group": "النترا",
+    "color": "ازرق",
+    "model": 20256,
+    "carCase": "Rented"
+  }
+]
