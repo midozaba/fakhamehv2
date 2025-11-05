@@ -24,7 +24,7 @@ const SEO = ({
   structuredData,
   lang = 'en',
 }) => {
-  const siteUrl = 'https://alfakhama.com'; // Update with actual domain
+  const siteUrl = 'https://www.al-fakhamah-car-rent.com';
   const canonicalUrl = canonical || `${siteUrl}${window.location.pathname}`;
 
   // Bilingual meta descriptions

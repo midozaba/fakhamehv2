@@ -3,7 +3,7 @@
  * For better SEO and rich snippets in search results
  */
 
-const SITE_URL = 'https://alfakhama.com'; // Update with actual domain
+const SITE_URL = 'https://www.al-fakhamah-car-rent.com';
 const COMPANY_NAME = 'Al-Fakhama Car Rental';
 const LOGO_URL = `${SITE_URL}/logo.png`;
 

@@ -37,6 +37,8 @@ const AdminPage = () => {
 
   // State for cars
   const [cars, setCars] = useState([]);
+  const [carsSearchTerm, setCarsSearchTerm] = useState('');
+  const [carsStatusFilter, setCarsStatusFilter] = useState('all');
   const [showCarForm, setShowCarForm] = useState(false);
   const [editingCar, setEditingCar] = useState(null);
   const [carImageFile, setCarImageFile] = useState(null);
@@ -55,6 +57,12 @@ const AdminPage = () => {
     status: 'available',
     image_url: ''
   });
+
+  // State for bulk upload
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [bulkUploadFiles, setBulkUploadFiles] = useState([]);
+  const [bulkUploadResults, setBulkUploadResults] = useState(null);
+  const [bulkUploading, setBulkUploading] = useState(false);
 
   // State for reviews
   const [reviews, setReviews] = useState([]);
@@ -143,6 +151,28 @@ const AdminPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Filter cars based on search term and status
+  const getFilteredCars = () => {
+    let filtered = [...cars];
+
+    // Filter by status
+    if (carsStatusFilter !== 'all') {
+      filtered = filtered.filter(car => car.status === carsStatusFilter);
+    }
+
+    // Filter by search term (car number or type)
+    if (carsSearchTerm.trim()) {
+      const searchLower = carsSearchTerm.toLowerCase().trim();
+      filtered = filtered.filter(car =>
+        car.car_num?.toString().includes(searchLower) ||
+        car.car_type?.toLowerCase().includes(searchLower) ||
+        car.car_barnd?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return filtered;
   };
 
   // Fetch reviews
@@ -250,7 +280,7 @@ const AdminPage = () => {
 
   // Scroll to top and lock body scroll when modal is open
   useEffect(() => {
-    if (showCarForm || viewingDocuments) {
+    if (showCarForm || viewingDocuments || showBulkUpload) {
       // Scroll to top instantly
       window.scrollTo(0, 0);
       // Lock scroll
@@ -263,7 +293,7 @@ const AdminPage = () => {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [showCarForm, viewingDocuments]);
+  }, [showCarForm, viewingDocuments, showBulkUpload]);
 
   // Handle booking status update
   const handleBookingStatusUpdate = async (bookingId, newStatus) => {
@@ -430,6 +460,67 @@ const AdminPage = () => {
     } catch (error) {
       toast.error(error.message || 'Failed to delete car');
     }
+  };
+
+  // Handle bulk upload file selection
+  const handleBulkUploadFilesChange = (e) => {
+    const files = Array.from(e.target.files);
+    setBulkUploadFiles(files);
+    setBulkUploadResults(null);
+  };
+
+  // Handle bulk upload submission
+  const handleBulkUploadSubmit = async (e) => {
+    e.preventDefault();
+
+    if (bulkUploadFiles.length === 0) {
+      toast.error('Please select at least one image file');
+      return;
+    }
+
+    setBulkUploading(true);
+    setBulkUploadResults(null);
+
+    try {
+      const formData = new FormData();
+
+      // Append all files
+      bulkUploadFiles.forEach(file => {
+        formData.append('carImages', file);
+      });
+
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch('/api/cars/bulk-upload-images', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setBulkUploadResults(data.results);
+        toast.success(data.message);
+        // Refresh cars list
+        fetchCars();
+      } else {
+        toast.error(data.error || 'Bulk upload failed');
+      }
+    } catch (error) {
+      console.error('Bulk upload error:', error);
+      toast.error('Failed to upload images');
+    } finally {
+      setBulkUploading(false);
+    }
+  };
+
+  // Handle bulk upload modal close
+  const handleCloseBulkUpload = () => {
+    setShowBulkUpload(false);
+    setBulkUploadFiles([]);
+    setBulkUploadResults(null);
   };
 
   // Format date
@@ -874,14 +965,79 @@ const AdminPage = () => {
         {/* Cars Tab */}
         {activeTab === "cars" && (
           <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
               <h2 className="text-2xl font-bold">Car Inventory</h2>
-              <button
-                onClick={handleAddCarClick}
-                className="px-6 py-3 bg-gradient-to-r from-blue-900 to-slate-600 text-white rounded-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105"
-              >
-                + Add New Car
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowBulkUpload(true)}
+                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105"
+                >
+                  Upload Photos
+                </button>
+                <button
+                  onClick={handleAddCarClick}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-900 to-slate-600 text-white rounded-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105"
+                >
+                  + Add New Car
+                </button>
+              </div>
+            </div>
+
+            {/* Search and Filter Controls */}
+            <div className="mb-6 bg-white rounded-xl shadow-lg p-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* Search Bar */}
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Search by Car Number, Type, or Brand
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter car number, type, or brand..."
+                    value={carsSearchTerm}
+                    onChange={(e) => setCarsSearchTerm(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Status Filter */}
+                <div className="sm:w-64">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Filter by Status
+                  </label>
+                  <select
+                    value={carsStatusFilter}
+                    onChange={(e) => setCarsStatusFilter(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">All Cars</option>
+                    <option value="available">Available</option>
+                    <option value="rented">Rented</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="unavailable">Unavailable</option>
+                  </select>
+                </div>
+
+                {/* Clear Filters Button */}
+                {(carsSearchTerm || carsStatusFilter !== 'all') && (
+                  <div className="flex items-end">
+                    <button
+                      onClick={() => {
+                        setCarsSearchTerm('');
+                        setCarsStatusFilter('all');
+                      }}
+                      className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all whitespace-nowrap"
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Results Count */}
+              <div className="mt-3 text-sm text-gray-600">
+                Showing {getFilteredCars().length} of {cars.length} cars
+              </div>
             </div>
 
             {loading ? (
@@ -906,7 +1062,7 @@ const AdminPage = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {cars.map((car) => (
+                      {getFilteredCars().map((car) => (
                         <tr key={car.id} className="hover:bg-gray-50">
                           <td className="px-4 py-3 text-sm font-medium">{car.car_barnd}</td>
                           <td className="px-4 py-3 text-sm">{car.car_type}</td>
@@ -943,9 +1099,13 @@ const AdminPage = () => {
                   </table>
                 </div>
 
-                {cars.length === 0 && (
+                {getFilteredCars().length === 0 && !loading && (
                   <div className="text-center py-12">
-                    <p className="text-gray-600">No cars found</p>
+                    <p className="text-gray-600">
+                      {cars.length === 0
+                        ? 'No cars found in inventory'
+                        : 'No cars match the current filters'}
+                    </p>
                   </div>
                 )}
               </div>
@@ -1732,6 +1892,180 @@ const AdminPage = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Upload Modal */}
+      {showBulkUpload && (
+        <div
+          className="fixed inset-0 flex items-start justify-center z-50 p-4 pt-8 overflow-y-auto"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              handleCloseBulkUpload();
+            }
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
+            <div className="p-6 border-b flex justify-between items-center">
+              <h3 className="text-2xl font-bold">Bulk Upload Car Photos</h3>
+              <button
+                onClick={handleCloseBulkUpload}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              {/* Instructions */}
+              <div className="bg-blue-50 p-4 rounded-lg mb-6">
+                <h4 className="font-semibold text-gray-700 mb-2">Instructions</h4>
+                <ol className="list-decimal list-inside space-y-1 text-sm text-gray-600">
+                  <li>Name your image files with the car number (e.g., "7041195.jpg", "7050085.png")</li>
+                  <li>The car number must be exactly 7 digits and match a car in your database</li>
+                  <li>Select multiple images at once (up to 100 files)</li>
+                  <li>Supported formats: JPG, PNG, GIF, WEBP (max 5MB each)</li>
+                  <li>Images will automatically be matched to cars by their car number</li>
+                </ol>
+              </div>
+
+              <form onSubmit={handleBulkUploadSubmit}>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Car Images
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleBulkUploadFilesChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    disabled={bulkUploading}
+                  />
+                  {bulkUploadFiles.length > 0 && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {bulkUploadFiles.length} file(s) selected
+                    </p>
+                  )}
+                </div>
+
+                {/* File list preview */}
+                {bulkUploadFiles.length > 0 && !bulkUploadResults && (
+                  <div className="mb-6 max-h-48 overflow-y-auto border rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-700 mb-2">Selected Files:</h4>
+                    <ul className="space-y-1 text-sm text-gray-600">
+                      {bulkUploadFiles.map((file, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <span className="text-green-600">✓</span>
+                          <span>{file.name}</span>
+                          <span className="text-gray-400">({(file.size / 1024).toFixed(0)} KB)</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Upload results */}
+                {bulkUploadResults && (
+                  <div className="mb-6 space-y-4">
+                    {/* Success results */}
+                    {bulkUploadResults.success.length > 0 && (
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <h4 className="font-semibold text-green-800 mb-2">
+                          Successfully Uploaded ({bulkUploadResults.success.length})
+                        </h4>
+                        <div className="max-h-48 overflow-y-auto">
+                          <ul className="space-y-1 text-sm text-green-700">
+                            {bulkUploadResults.success.map((result, index) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <span className="text-green-600 mt-0.5">✓</span>
+                                <span>
+                                  <strong>{result.filename}</strong> → Car #{result.car_num} ({result.car})
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Failed results */}
+                    {bulkUploadResults.failed.length > 0 && (
+                      <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                        <h4 className="font-semibold text-red-800 mb-2">
+                          Failed ({bulkUploadResults.failed.length})
+                        </h4>
+                        <div className="max-h-48 overflow-y-auto">
+                          <ul className="space-y-1 text-sm text-red-700">
+                            {bulkUploadResults.failed.map((result, index) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <span className="text-red-600 mt-0.5">✗</span>
+                                <span>
+                                  <strong>{result.filename}</strong>
+                                  {result.car_num && ` (Car #${result.car_num})`}: {result.reason}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Skipped results */}
+                    {bulkUploadResults.skipped.length > 0 && (
+                      <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <h4 className="font-semibold text-yellow-800 mb-2">
+                          Skipped ({bulkUploadResults.skipped.length})
+                        </h4>
+                        <div className="max-h-48 overflow-y-auto">
+                          <ul className="space-y-1 text-sm text-yellow-700">
+                            {bulkUploadResults.skipped.map((result, index) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <span className="text-yellow-600 mt-0.5">⚠</span>
+                                <span>
+                                  <strong>{result.filename}</strong>: {result.reason}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  {!bulkUploadResults && (
+                    <button
+                      type="submit"
+                      disabled={bulkUploading || bulkUploadFiles.length === 0}
+                      className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
+                        bulkUploading || bulkUploadFiles.length === 0
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:opacity-90'
+                      }`}
+                    >
+                      {bulkUploading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          Uploading...
+                        </span>
+                      ) : (
+                        `Upload ${bulkUploadFiles.length} Photo(s)`
+                      )}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleCloseBulkUpload}
+                    className="px-6 py-3 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 transition-all"
+                  >
+                    {bulkUploadResults ? 'Close' : 'Cancel'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

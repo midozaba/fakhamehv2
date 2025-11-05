@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const SITE_URL = 'https://alfakhama.com';
+const SITE_URL = 'https://www.al-fakhamah-car-rent.com';
 
 /**
  * Dynamic Sitemap Generator for Al-Fakhama Car Rental

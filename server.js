@@ -29,6 +29,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// CRITICAL: Trust proxy when running behind cPanel/Apache/Nginx
+// This is required for express-rate-limit to work correctly
+app.set('trust proxy', true);
+
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -404,12 +408,20 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
     );
 
     // Set token in httpOnly cookie
-    res.cookie('adminToken', token, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-      sameSite: 'lax', // 'lax' for better mobile Safari compatibility while maintaining CSRF protection
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    });
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-site in production (requires secure)
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/'
+    };
+
+    // Add domain in production if specified
+    if (process.env.COOKIE_DOMAIN) {
+      cookieOptions.domain = process.env.COOKIE_DOMAIN;
+    }
+
+    res.cookie('adminToken', token, cookieOptions);
 
     // Return success with token (for backward compatibility) and user info
     res.json({
@@ -458,20 +470,34 @@ app.post('/api/admin/logout', authenticateToken, async (req, res) => {
       req
     );
 
-    res.clearCookie('adminToken', {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' // Match the login cookie settings
-    });
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/'
+    };
+
+    if (process.env.COOKIE_DOMAIN) {
+      cookieOptions.domain = process.env.COOKIE_DOMAIN;
+    }
+
+    res.clearCookie('adminToken', cookieOptions);
     res.json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
     console.error('Logout error:', error);
     // Still clear cookie even if logging fails
-    res.clearCookie('adminToken', {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
-    });
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/'
+    };
+
+    if (process.env.COOKIE_DOMAIN) {
+      cookieOptions.domain = process.env.COOKIE_DOMAIN;
+    }
+
+    res.clearCookie('adminToken', cookieOptions);
     res.json({ success: true, message: 'Logged out successfully' });
   }
 });
@@ -703,21 +729,46 @@ const sendAdminNotificationEmail = async (booking, customer, car) => {
 // Get all cars
 app.get('/api/cars', async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, search, car_type, car_num } = req.query;
     let query = 'SELECT * FROM cars';
     const params = [];
+    const conditions = [];
 
     // By default, only show available cars to public users
     // Admin can override with ?status=all or ?status=rented query parameter
     if (status && status !== 'all') {
-      query += ' WHERE status = ?';
+      conditions.push('status = ?');
       params.push(status);
     } else if (!status) {
       // No status parameter = show only available cars
-      query += ' WHERE status = ?';
+      conditions.push('status = ?');
       params.push('available');
     }
-    // If status=all, show all cars (no WHERE clause)
+    // If status=all, show all cars (no status filter)
+
+    // Search filter - searches across car_num, car_type, and car_barnd
+    if (search) {
+      conditions.push('(car_num LIKE ? OR car_type LIKE ? OR car_barnd LIKE ?)');
+      const searchParam = `%${search}%`;
+      params.push(searchParam, searchParam, searchParam);
+    }
+
+    // Filter by specific car type
+    if (car_type) {
+      conditions.push('car_type LIKE ?');
+      params.push(`%${car_type}%`);
+    }
+
+    // Filter by specific car number
+    if (car_num) {
+      conditions.push('car_num LIKE ?');
+      params.push(`%${car_num}%`);
+    }
+
+    // Add WHERE clause if there are conditions
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
 
     query += ' ORDER BY id DESC';
 
@@ -903,6 +954,126 @@ app.put('/api/cars/:id', authenticateToken, upload.single('carImage'), async (re
       fs.unlinkSync(path.join(uploadsDir, req.file.filename));
     }
     res.status(500).json({ success: false, error: 'Failed to update car' });
+  }
+});
+
+// Bulk upload car images (admin endpoint)
+app.post('/api/cars/bulk-upload-images', authenticateToken, upload.array('carImages', 100), async (req, res) => {
+  const uploadedFiles = req.files || [];
+  const results = {
+    success: [],
+    failed: [],
+    skipped: []
+  };
+
+  try {
+    // Process each uploaded file
+    for (const file of uploadedFiles) {
+      try {
+        // Extract car number from filename (e.g., "7041195.jpg" -> 7041195)
+        const filenameWithoutExt = path.parse(file.filename).name;
+        const originalFilenameWithoutExt = path.parse(file.originalname).name;
+
+        // Try to extract car_num from original filename first (more reliable)
+        const carNumMatch = originalFilenameWithoutExt.match(/(\d{7})/);
+
+        if (!carNumMatch) {
+          results.skipped.push({
+            filename: file.originalname,
+            reason: 'Could not extract 7-digit car number from filename. Please name files like "7041195.jpg"'
+          });
+          // Delete the uploaded file since we can't use it
+          fs.unlinkSync(path.join(uploadsDir, file.filename));
+          continue;
+        }
+
+        const car_num = parseInt(carNumMatch[1]);
+
+        // Find car by car_num
+        const [cars] = await promisePool.query('SELECT * FROM cars WHERE car_num = ?', [car_num]);
+
+        if (cars.length === 0) {
+          results.failed.push({
+            filename: file.originalname,
+            car_num,
+            reason: `No car found with car number ${car_num}`
+          });
+          // Delete the uploaded file since we can't use it
+          fs.unlinkSync(path.join(uploadsDir, file.filename));
+          continue;
+        }
+
+        const car = cars[0];
+        const image_url = `/uploads/${file.filename}`;
+
+        // Delete old image file if exists
+        if (car.image_url && car.image_url.startsWith('/uploads/')) {
+          const oldImagePath = path.join(__dirname, car.image_url);
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+          }
+        }
+
+        // Update car with new image
+        await promisePool.query(
+          'UPDATE cars SET image_url = ? WHERE id = ?',
+          [image_url, car.id]
+        );
+
+        // Log the update
+        await logAdminAction(
+          req.user,
+          'UPDATE',
+          'car',
+          car.id,
+          `Bulk uploaded image for car: ${car.car_barnd} ${car.car_model} (${car_num})`,
+          { image_url: car.image_url },
+          { image_url },
+          req
+        );
+
+        results.success.push({
+          filename: file.originalname,
+          car_num,
+          car: `${car.car_barnd} ${car.car_type} (${car.car_model})`
+        });
+
+      } catch (error) {
+        console.error('Error processing file:', file.originalname, error);
+        results.failed.push({
+          filename: file.originalname,
+          reason: error.message
+        });
+        // Try to delete the file if it still exists
+        try {
+          if (fs.existsSync(path.join(uploadsDir, file.filename))) {
+            fs.unlinkSync(path.join(uploadsDir, file.filename));
+          }
+        } catch (unlinkError) {
+          console.error('Error deleting file:', unlinkError);
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Processed ${uploadedFiles.length} files: ${results.success.length} uploaded, ${results.failed.length} failed, ${results.skipped.length} skipped`,
+      results
+    });
+
+  } catch (error) {
+    console.error('Error in bulk upload:', error);
+    // Clean up any uploaded files
+    uploadedFiles.forEach(file => {
+      try {
+        if (fs.existsSync(path.join(uploadsDir, file.filename))) {
+          fs.unlinkSync(path.join(uploadsDir, file.filename));
+        }
+      } catch (unlinkError) {
+        console.error('Error deleting file:', unlinkError);
+      }
+    });
+    res.status(500).json({ success: false, error: 'Bulk upload failed', details: error.message });
   }
 });
 

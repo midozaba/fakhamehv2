@@ -9,7 +9,7 @@ Disallow: /admin
 Disallow: /api/
 
 # Sitemap location
-Sitemap: https://alfakhama.com/sitemap.xml
+Sitemap: https://www.al-fakhamah-car-rent.com/sitemap.xml
 
 # Crawl delay (optional, adjust if needed)
 Crawl-delay: 1
