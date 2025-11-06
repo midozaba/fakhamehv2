@@ -7,8 +7,8 @@ const ProtectedRoute = ({ children }) => {
 
   useEffect(() => {
     const checkAuth = () => {
-      const token = localStorage.getItem('adminToken');
-      const user = localStorage.getItem('adminUser');
+      const token = sessionStorage.getItem('adminToken');
+      const user = sessionStorage.getItem('adminUser');
 
       if (!token || !user) {
         setIsAuthenticated(false);

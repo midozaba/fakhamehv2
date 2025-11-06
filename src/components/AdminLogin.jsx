@@ -19,9 +19,9 @@ const AdminLogin = () => {
       const data = await api.admin.login(formData);
 
       if (data.success) {
-        // Store token in localStorage
-        localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('adminUser', JSON.stringify(data.user));
+        // Store token in sessionStorage (clears when browser closes)
+        sessionStorage.setItem('adminToken', data.token);
+        sessionStorage.setItem('adminUser', JSON.stringify(data.user));
 
         toast.success(`Welcome ${data.user.full_name || data.user.username}!`);
 

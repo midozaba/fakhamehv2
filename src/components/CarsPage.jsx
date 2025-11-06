@@ -39,7 +39,7 @@ const CarsPage = () => {
       setError(err);
       const errorMsg = getErrorMessage(err, language);
       toast.error(errorMsg);
-      console.error('Error loading cars:', err);
+      console.error('Eraror loading cars:', err);
       setCars([]); // Ensure cars is an empty array on error
     } finally {
       setLoading(false);

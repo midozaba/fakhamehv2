@@ -247,13 +247,75 @@ const verifyTurnstile = async (req, res, next) => {
 
 
 
+// ==================== COMPREHENSIVE ERROR HANDLING UTILITY ====================
+
+/**
+ * Enhanced error handler for development debugging
+ * Provides detailed error information including stack traces in development mode
+ * @param {Error} error - The error object
+ * @param {string} context - Context where error occurred (e.g., 'Login endpoint', 'Create booking')
+ * @param {object} req - Express request object
+ * @param {object} additionalInfo - Any additional debugging information
+ */
+const logDetailedError = (error, context, req = null, additionalInfo = {}) => {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  const errorDetails = {
+    timestamp: new Date().toISOString(),
+    context,
+    error: {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage,
+      stack: isDevelopment ? error.stack : undefined
+    },
+    request: req ? {
+      method: req.method,
+      url: req.originalUrl,
+      body: req.body,
+      params: req.params,
+      query: req.query,
+      ip: req.ip,
+      userAgent: req.get('user-agent')
+    } : undefined,
+    ...additionalInfo
+  };
+
+  console.error('\n==================== ERROR DETAILS ====================');
+  console.error(JSON.stringify(errorDetails, null, 2));
+  console.error('======================================================\n');
+
+  return errorDetails;
+};
+
+/**
+ * Send error response with detailed information in development mode
+ * @param {object} res - Express response object
+ * @param {number} statusCode - HTTP status code
+ * @param {string} message - User-friendly error message
+ * @param {object} errorDetails - Detailed error information from logDetailedError
+ */
+const sendErrorResponse = (res, statusCode, message, errorDetails = null) => {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  const response = {
+    success: false,
+    error: message,
+    ...(isDevelopment && errorDetails ? { debug: errorDetails } : {})
+  };
+
+  return res.status(statusCode).json(response);
+};
+
 // ==================== ADMIN AUTHENTICATION ====================
 
 // Security: Rate limiting for login endpoint
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login requests per windowMs
-  message: { success: false, message: 'Too many login attempts. Please try again after 15 minutes.' },
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 20, // Limit each IP to 20 login requests per windowMs (more lenient for CGNAT)
+  message: { success: false, message: 'Too many login attempts from this IP. Please try again after 10 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful logins
@@ -352,6 +414,27 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Username and password are required' });
     }
 
+    // Check username-based rate limiting (last 30 minutes)
+    const [recentFailedAttempts] = await promisePool.execute(
+      `SELECT COUNT(*) as failCount
+       FROM login_attempts
+       WHERE username = ?
+       AND success = FALSE
+       AND attempted_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)`,
+      [username]
+    );
+
+    const failedAttempts = recentFailedAttempts[0].failCount;
+
+    // Lock account after 10 failed attempts in 30 minutes
+    if (failedAttempts >= 10) {
+      await logLoginAttempt(username, false, ip, userAgent);
+      return res.status(429).json({
+        success: false,
+        message: 'Account temporarily locked due to too many failed login attempts. Please try again in 30 minutes or contact support.'
+      });
+    }
+
     // Get user from database
     const [users] = await promisePool.execute(
       'SELECT * FROM admin_users WHERE username = ? AND is_active = TRUE',
@@ -396,7 +479,8 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
       req
     );
 
-    // Generate JWT token
+    // Generate JWT token with extended expiration (30 days)
+    // Session will be cleared on browser close via sessionStorage
     const token = jwt.sign(
       {
         id: user.id,
@@ -404,7 +488,7 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
         role: user.role
       },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '30d' }
     );
 
     // Set token in httpOnly cookie
@@ -412,7 +496,7 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-site in production (requires secure)
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       path: '/'
     };
 
@@ -436,10 +520,25 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Login error:', error);
+    const errorDetails = logDetailedError(error, 'Admin Login', req, {
+      attemptedUsername: req.body?.username,
+      ip,
+      userAgent
+    });
+
     // Log failed attempt
-    await logLoginAttempt(req.body.username || 'unknown', false, ip, userAgent);
-    res.status(500).json({ success: false, message: 'Login failed. Please try again.', error: error.message });
+    try {
+      await logLoginAttempt(req.body.username || 'unknown', false, ip, userAgent);
+    } catch (logError) {
+      console.error('Failed to log login attempt:', logError);
+    }
+
+    return sendErrorResponse(
+      res,
+      500,
+      'Login failed due to server error. Please try again or contact support.',
+      errorDetails
+    );
   }
 });
 
@@ -775,8 +874,8 @@ app.get('/api/cars', async (req, res) => {
     const [rows] = await promisePool.query(query, params);
     res.json({ success: true, data: rows });
   } catch (error) {
-    console.error('Error fetching cars:', error);
-    res.status(500).json({ success: false, error: 'Failed to fetch cars' });
+    const errorDetails = logDetailedError(error, 'Get Cars', req, { filters: req.query });
+    return sendErrorResponse(res, 500, 'Failed to fetch cars', errorDetails);
   }
 });
 
@@ -785,12 +884,12 @@ app.get('/api/cars/:id', async (req, res) => {
   try {
     const [rows] = await promisePool.query('SELECT * FROM cars WHERE id = ?', [req.params.id]);
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Car not found' });
+      return res.status(404).json({ success: false, error: 'Car not found' });
     }
     res.json(rows[0]);
   } catch (error) {
-    console.error('Error fetching car:', error);
-    res.status(500).json({ error: 'Failed to fetch car' });
+    const errorDetails = logDetailedError(error, 'Get Car by ID', req, { carId: req.params.id });
+    return sendErrorResponse(res, 500, 'Failed to fetch car', errorDetails);
   }
 });
 
@@ -803,8 +902,8 @@ app.get('/api/cars/status/available', async (req, res) => {
     );
     res.json(rows);
   } catch (error) {
-    console.error('Error fetching available cars:', error);
-    res.status(500).json({ error: 'Failed to fetch available cars' });
+    const errorDetails = logDetailedError(error, 'Get Available Cars', req);
+    return sendErrorResponse(res, 500, 'Failed to fetch available cars', errorDetails);
   }
 });
 
@@ -835,8 +934,11 @@ app.delete('/api/cars/:id', authenticateToken, async (req, res) => {
 
     res.json({ success: true, message: 'Car deleted successfully' });
   } catch (error) {
-    console.error('Error deleting car:', error);
-    res.status(500).json({ success: false, error: 'Failed to delete car' });
+    const errorDetails = logDetailedError(error, 'Delete Car', req, {
+      carId: req.params.id,
+      adminUser: req.user
+    });
+    return sendErrorResponse(res, 500, 'Failed to delete car', errorDetails);
   }
 });
 
@@ -880,12 +982,22 @@ app.post('/api/cars', authenticateToken, upload.single('carImage'), async (req, 
 
     res.status(201).json({ success: true, message: 'Car created successfully', id: result.insertId });
   } catch (error) {
-    console.error('Error creating car:', error);
     // Delete uploaded file if car creation failed
-    if (req.file) {
-      fs.unlinkSync(path.join(uploadsDir, req.file.filename));
+    try {
+      if (req.file) {
+        fs.unlinkSync(path.join(uploadsDir, req.file.filename));
+      }
+    } catch (fileError) {
+      console.error('Error deleting uploaded file:', fileError);
     }
-    res.status(500).json({ success: false, error: 'Failed to create car' });
+
+    const errorDetails = logDetailedError(error, 'Create Car', req, {
+      carData: req.body,
+      uploadedFile: req.file?.filename,
+      adminUser: req.user
+    });
+
+    return sendErrorResponse(res, 500, 'Failed to create car', errorDetails);
   }
 });
 
@@ -1228,7 +1340,9 @@ app.post('/api/contact', verifyTurnstile, async (req, res) => {
 // Get all contact messages (admin endpoint)
 app.get('/api/contact-messages', authenticateToken, async (req, res) => {
   try {
-    const [rows] = await promisePool.query(`
+    const { status } = req.query;
+
+    let query = `
       SELECT
         id as message_id,
         name,
@@ -1237,12 +1351,31 @@ app.get('/api/contact-messages', authenticateToken, async (req, res) => {
         status,
         created_at
       FROM contact_messages
-      ORDER BY created_at DESC
-    `);
+    `;
+
+    const params = [];
+
+    // Add status filter based on query parameter
+    if (status === 'all') {
+      // Show all messages including archived
+      // No WHERE clause needed
+    } else if (status) {
+      // Show specific status
+      query += ' WHERE status = ?';
+      params.push(status);
+    } else {
+      // Default: show all non-archived messages
+      query += ' WHERE status != ?';
+      params.push('archived');
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const [rows] = await promisePool.query(query, params);
     res.json({ success: true, data: rows });
   } catch (error) {
-    console.error('Error fetching contact messages:', error);
-    res.status(500).json({ success: false, error: 'Failed to fetch messages' });
+    const errorDetails = logDetailedError(error, 'Get Contact Messages', req, { filters: req.query });
+    return sendErrorResponse(res, 500, 'Failed to fetch contact messages', errorDetails);
   }
 });
 
@@ -1278,8 +1411,12 @@ app.patch('/api/contact-messages/:id/status', authenticateToken, async (req, res
 
     res.json({ success: true, message: 'Message status updated successfully' });
   } catch (error) {
-    console.error('Error updating message status:', error);
-    res.status(500).json({ success: false, error: 'Failed to update message status' });
+    const errorDetails = logDetailedError(error, 'Update Contact Message Status', req, {
+      messageId: req.params.id,
+      newStatus: req.body.status,
+      adminUser: req.user
+    });
+    return sendErrorResponse(res, 500, 'Failed to update message status', errorDetails);
   }
 });
 
@@ -1427,15 +1564,31 @@ app.post('/api/bookings', upload.fields([
     await connection.rollback();
 
     // Delete uploaded files if booking failed
-    if (req.files?.idDocument?.[0]) {
-      fs.unlinkSync(path.join(uploadsDir, req.files.idDocument[0].filename));
-    }
-    if (req.files?.passportDocument?.[0]) {
-      fs.unlinkSync(path.join(uploadsDir, req.files.passportDocument[0].filename));
+    try {
+      if (req.files?.idDocument?.[0]) {
+        fs.unlinkSync(path.join(uploadsDir, req.files.idDocument[0].filename));
+      }
+      if (req.files?.passportDocument?.[0]) {
+        fs.unlinkSync(path.join(uploadsDir, req.files.passportDocument[0].filename));
+      }
+    } catch (fileError) {
+      console.error('Error deleting uploaded files:', fileError);
     }
 
-    console.error('Error creating booking:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to create booking' });
+    const errorDetails = logDetailedError(error, 'Create Booking', req, {
+      carId: req.body?.bookingData ? JSON.parse(req.body.bookingData)?.car?.id : null,
+      uploadedFiles: {
+        idDocument: req.files?.idDocument?.[0]?.filename,
+        passportDocument: req.files?.passportDocument?.[0]?.filename
+      }
+    });
+
+    return sendErrorResponse(
+      res,
+      500,
+      error.message || 'Failed to create booking. Please try again or contact support.',
+      errorDetails
+    );
   } finally {
     connection.release();
   }
@@ -1545,8 +1698,8 @@ app.get('/api/bookings', authenticateToken, async (req, res) => {
 
     res.json({ success: true, data: bookingsWithDetails });
   } catch (error) {
-    console.error('Error fetching bookings:', error);
-    res.status(500).json({ success: false, error: 'Failed to fetch bookings' });
+    const errorDetails = logDetailedError(error, 'Get All Bookings', req);
+    return sendErrorResponse(res, 500, 'Failed to fetch bookings', errorDetails);
   }
 });
 
@@ -1563,12 +1716,12 @@ app.get('/api/bookings/:id', async (req, res) => {
     `, [req.params.id]);
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Booking not found' });
+      return res.status(404).json({ success: false, error: 'Booking not found' });
     }
     res.json(rows[0]);
   } catch (error) {
-    console.error('Error fetching booking:', error);
-    res.status(500).json({ error: 'Failed to fetch booking' });
+    const errorDetails = logDetailedError(error, 'Get Booking by ID', req, { bookingId: req.params.id });
+    return sendErrorResponse(res, 500, 'Failed to fetch booking', errorDetails);
   }
 });
 
@@ -1667,8 +1820,19 @@ app.patch('/api/bookings/:id/status', authenticateToken, async (req, res) => {
     res.json({ success: true, message: 'Booking status updated successfully' });
   } catch (error) {
     await connection.rollback();
-    console.error('Error updating booking status:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to update booking status' });
+
+    const errorDetails = logDetailedError(error, 'Update Booking Status', req, {
+      bookingId: req.params.id,
+      newStatus: req.body.status,
+      adminUser: req.user
+    });
+
+    return sendErrorResponse(
+      res,
+      500,
+      error.message || 'Failed to update booking status',
+      errorDetails
+    );
   } finally {
     connection.release();
   }

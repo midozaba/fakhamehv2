@@ -33,7 +33,7 @@ const AdminPage = () => {
 
   // State for contact messages
   const [contactMessages, setContactMessages] = useState([]);
-  const [messagesFilter, setMessagesFilter] = useState("all");
+  const [messagesFilter, setMessagesFilter] = useState("active");
 
   // State for cars
   const [cars, setCars] = useState([]);
@@ -121,7 +121,10 @@ const AdminPage = () => {
   const fetchMessages = async () => {
     try {
       setLoading(true);
-      const filters = messagesFilter !== "all" ? { status: messagesFilter } : {};
+      // 'active' means non-archived (default), 'archived' means archived only
+      const filters = messagesFilter === "active"
+        ? {} // Empty object = default = non-archived messages
+        : { status: "archived" };
       const response = await getContactMessages(filters);
       if (response.success) {
         setContactMessages(response.data);
@@ -237,9 +240,9 @@ const AdminPage = () => {
     }
   };
 
-  // Load current user from localStorage
+  // Load current user from sessionStorage
   useEffect(() => {
-    const user = localStorage.getItem('adminUser');
+    const user = sessionStorage.getItem('adminUser');
     if (user) {
       setCurrentUser(JSON.parse(user));
     }
@@ -247,8 +250,8 @@ const AdminPage = () => {
 
   // Handle logout
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminUser');
+    sessionStorage.removeItem('adminToken');
+    sessionStorage.removeItem('adminUser');
     toast.success('Logged out successfully');
     navigate('/admin/login');
   };
@@ -278,21 +281,23 @@ const AdminPage = () => {
     }
   }, [logsFilter]);
 
-  // Scroll to top and lock body scroll when modal is open
+  // Scroll to top when modal is open, then lock scroll
   useEffect(() => {
     if (showCarForm || viewingDocuments || showBulkUpload) {
-      // Scroll to top instantly
+      // Scroll to top
       window.scrollTo(0, 0);
-      // Lock scroll
-      document.body.style.overflow = 'hidden';
+      // Wait 0.5 seconds then lock scroll
+      const timer = setTimeout(() => {
+        document.body.style.overflow = 'hidden';
+      }, 500);
+
+      return () => {
+        clearTimeout(timer);
+        document.body.style.overflow = 'unset';
+      };
     } else {
       document.body.style.overflow = 'unset';
     }
-
-    // Cleanup on unmount
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
   }, [showCarForm, viewingDocuments, showBulkUpload]);
 
   // Handle booking status update
@@ -489,7 +494,7 @@ const AdminPage = () => {
         formData.append('carImages', file);
       });
 
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const response = await fetch('/api/cars/bulk-upload-images', {
         method: 'POST',
         headers: {
@@ -874,10 +879,7 @@ const AdminPage = () => {
                 onChange={(e) => setMessagesFilter(e.target.value)}
                 className="px-4 py-2 border rounded-lg"
               >
-                <option value="all">All Messages</option>
-                <option value="new">New</option>
-                <option value="read">Read</option>
-                <option value="replied">Replied</option>
+                <option value="active">Active</option>
                 <option value="archived">Archived</option>
               </select>
             </div>

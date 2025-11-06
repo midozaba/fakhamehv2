@@ -29,8 +29,8 @@ apiClient.interceptors.request.use(
     // Add timestamp to request
     config.metadata = { startTime: new Date() };
 
-    // Add Authorization header if token exists in localStorage
-    const token = localStorage.getItem('adminToken');
+    // Add Authorization header if token exists in sessionStorage
+    const token = sessionStorage.getItem('adminToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
