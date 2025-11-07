@@ -9,7 +9,9 @@
       "Bash(mysql:*)",
       "Bash(npm run build:*)",
       "Bash(scp:*)",
-      "Bash(ssh mido@192.168.1.124 \"cat ~/backend/server.js | grep -A 5 ''Serve React app''\")"
+      "Bash(ssh mido@192.168.1.124 \"cat ~/backend/server.js | grep -A 5 ''Serve React app''\")",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []
