@@ -164,7 +164,9 @@ pool.getConnection((err, connection) => {
 
 // Email transporter configuration
 const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || 'gmail',
+  host: process.env.EMAIL_HOST || 'al-fakhamah-car-rent.com',
+  port: parseInt(process.env.EMAIL_PORT) || 465,
+  secure: process.env.EMAIL_SECURE === 'true' || true, // true for 465, false for 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
@@ -606,9 +608,15 @@ app.post('/api/admin/logout', authenticateToken, async (req, res) => {
 // Email templates
 const sendCustomerConfirmationEmail = async (booking, customer, car) => {
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: `Al-Fakhama Car Rental <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
     to: customer.email,
+    replyTo: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     subject: 'Booking Confirmation - Al-Fakhama Car Rental',
+    headers: {
+      'X-Mailer': 'Al-Fakhama Car Rental',
+      'X-Priority': '1',
+      'Importance': 'high'
+    },
     html: `
       <!DOCTYPE html>
       <html>
@@ -697,12 +705,20 @@ const sendCustomerConfirmationEmail = async (booking, customer, car) => {
 };
 
 const sendAdminNotificationEmail = async (booking, customer, car) => {
-  const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
+  // Support multiple admin emails separated by commas
+  const adminEmails = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
+  const emailList = adminEmails.split(',').map(email => email.trim()).filter(email => email);
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: adminEmail,
+    from: `Al-Fakhama Car Rental <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+    to: emailList.join(', '),
+    replyTo: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     subject: `New Booking #${booking.rental_id} - ${customer.full_name}`,
+    headers: {
+      'X-Mailer': 'Al-Fakhama Car Rental',
+      'X-Priority': '1',
+      'Importance': 'high'
+    },
     html: `
       <!DOCTYPE html>
       <html>
