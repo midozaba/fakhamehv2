@@ -44,9 +44,15 @@ const AboutUs = () => {
                   تُقدّم الشركة مجموعة متنوعة من الخدمات التي تلبي احتياجات الزبائن في الأردن، منها:
                 </p>
                 <ul className="list-disc list-inside text-gray-700 space-y-2">
-                  <li>تأجير السيارات لفترات قصيرة وطويلة.</li>
-                  <li>أسعار مخصّصة للشركات عند التأجير لفترات طويلة.</li>
-                  <li>سيارات للزفاف والمؤتمرات وغيرها من المناسبات.</li>
+                  <li>سيارات خاصة للشركات و المؤسسات باسعار مميزة </li>
+                  <li> مركز صيانة خاص لمعاينة الملركبات بعد الاستلام و أكيد منستقبل سياراتكم الشخصية للصيانة  </li>
+                  <li>تغطية كافة الملؤتمرات بطريقة مميزة</li>
+                  <li>خدمة توصيل السيارة لزيائنا وين ما كانو برسوم رمزية  </li>
+                  <li> أسعار خاصة للأفراد لفترات التاجير طويلة الأمد شهري/سنوي </li>
+                  <li>متوفر الكم جميع أنواع السيارات حسب طلبكم (سيارة صغيرة، باصات، سيارات عائلية، سيارات اقتصادية، سيارات luxury) </li>
+                  <li>متابعة معكم طوال فترة التاجير و تكفل بالصيانة الدورية</li>
+
+
                 </ul>
               </section>
             </>
@@ -79,9 +85,13 @@ const AboutUs = () => {
                   The company offers a variety of services that meet the needs of customers in Jordan, including:
                 </p>
                 <ul className="list-disc list-inside text-gray-700 space-y-2">
-                  <li>Short and long-term car rentals.</li>
-                  <li>Special rates for corporate long-term rentals.</li>
-                  <li>Cars for weddings, conferences, and other special occasions.</li>
+                  <li>Private cars for companies and institutions at special rates</li>
+                  <li>Dedicated maintenance center for vehicle inspection upon delivery, and we also welcome your personal cars for maintenance</li>
+                  <li>Coverage of all conferences in a distinctive manner</li>
+                  <li>Car delivery service to our clients wherever they are with nominal fees</li>
+                  <li>Special rates for individuals for long-term monthly/annual rentals</li>
+                  <li>All types of vehicles available according to your request (compact cars, buses, family cars, economy cars, luxury cars)</li>
+                  <li>Follow-up with you throughout the rental period and guaranteed periodic maintenance</li>
                 </ul>
               </section>
             </>
