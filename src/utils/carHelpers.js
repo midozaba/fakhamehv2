@@ -94,25 +94,33 @@ export const locations = [
 
 export const calculatePrice = (selectedCar, bookingData) => {
   if (!selectedCar) return { basePrice: 0, insurancePrice: 0, servicesPrice: 0, locationPrice: 0, total: 0 };
-  if (!bookingData || typeof bookingData.days !== 'number' || bookingData.days <= 0) {
-    throw new Error('days is not defined');
+
+  // Calculate days if not provided or invalid
+  let days = bookingData?.days;
+  if (!days || typeof days !== 'number' || days <= 0) {
+    if (bookingData?.pickupDate && bookingData?.returnDate) {
+      days = Math.ceil((new Date(bookingData.returnDate) - new Date(bookingData.pickupDate)) / (1000 * 60 * 60 * 24));
+      days = Math.max(1, days);
+    } else {
+      days = 1; // Default to 1 day if no valid days or dates
+    }
   }
 
-  let basePrice = selectedCar.price_per_day * bookingData.days;
+  let basePrice = selectedCar.price_per_day * days;
   let insurancePrice = 0;
   let servicesPrice = 0;
   let locationPrice = 0;
 
-  if (bookingData.insurance === 'basic') insurancePrice = 0 * bookingData.days;
-  else if (bookingData.insurance === 'cdw') insurancePrice = 15 * bookingData.days;
-  else if (bookingData.insurance === 'full') insurancePrice = 35 * bookingData.days;
+  if (bookingData.insurance === 'basic') insurancePrice = 0 * days;
+  else if (bookingData.insurance === 'cdw') insurancePrice = 15 * days;
+  else if (bookingData.insurance === 'full') insurancePrice = 35 * days;
 
   if (bookingData.additionalServices && Array.isArray(bookingData.additionalServices)) {
     bookingData.additionalServices.forEach(service => {
-    if (service === 'phone') servicesPrice += 3 * bookingData.days;
-    else if (service === 'wifi') servicesPrice += 2 * bookingData.days;
-    else if (service === 'gps') servicesPrice += 2 * bookingData.days;
-    else if (service === 'childSeat') servicesPrice += 1 * bookingData.days;
+    if (service === 'phone') servicesPrice += 3 * days;
+    else if (service === 'wifi') servicesPrice += 2 * days;
+    else if (service === 'gps') servicesPrice += 2 * days;
+    else if (service === 'childSeat') servicesPrice += 1 * days;
     });
   }
 

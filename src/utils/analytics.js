@@ -202,10 +202,10 @@ export const trackBookingFunnel = {
   },
 
   // Step 9: Booking success
-  bookingSuccess: (totalPrice, carType, bookingId) => {
+  bookingSuccess: (totalPrice, carType, bookingId, days = 1) => {
     if (!isEnabled()) {
       if (isDevelopment) {
-        console.log('[Analytics] Booking Funnel - Success:', { totalPrice, carType, bookingId });
+        console.log('[Analytics] Booking Funnel - Success:', { totalPrice, carType, bookingId, days });
       }
       return;
     }

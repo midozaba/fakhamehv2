@@ -8,6 +8,7 @@ import { useTranslation } from "./utils/translations";
 import { AppProvider, useApp } from "./context/AppContext";
 import api from "./services/api";
 import { initGA, trackPageView, trackBookingFunnel } from "./utils/analytics";
+import { calculatePrice } from "./utils/carHelpers";
 import Header from "./components/Header";
 import Breadcrumbs from "./components/common/Breadcrumbs";
 import HomePage from "./components/HomePage";
@@ -147,7 +148,6 @@ const AppLayout = () => {
       const formData = new FormData();
 
       // Calculate pricing with updated days
-      const { calculatePrice } = await import('./utils/carHelpers');
       const updatedBookingData = { ...bookingData, days };
       const pricing = calculatePrice(selectedCar, updatedBookingData);
 
@@ -193,7 +193,7 @@ const AppLayout = () => {
       trackBookingFunnel.submitBooking(
         pricing.total,
         `${selectedCar.car_barnd} ${selectedCar.car_type}`,
-        bookingData.days
+        days
       );
 
       // Submit using API service (with automatic retry)
@@ -203,11 +203,12 @@ const AppLayout = () => {
       toast.dismiss('booking-loading');
 
       // Track booking success
-      const bookingId = result?.id || Date.now();
+      const bookingId = result?.rental_id || result?.id || Date.now();
       trackBookingFunnel.bookingSuccess(
         pricing.total,
         `${selectedCar.car_barnd} ${selectedCar.car_type}`,
-        bookingId
+        bookingId,
+        days
       );
 
       toast.success(language === 'ar'

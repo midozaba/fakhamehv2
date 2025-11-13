@@ -60,7 +60,17 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
   // Calculate pricing safely
   let pricing;
   try {
-    pricing = calculatePrice(car, bookingData);
+    // Ensure days is calculated even if not set yet
+    let bookingDataWithDays = { ...bookingData };
+    if (!bookingDataWithDays.days || bookingDataWithDays.days < 1) {
+      if (bookingDataWithDays.pickupDate && bookingDataWithDays.returnDate) {
+        const days = Math.ceil((new Date(bookingDataWithDays.returnDate) - new Date(bookingDataWithDays.pickupDate)) / (1000 * 60 * 60 * 24));
+        bookingDataWithDays.days = Math.max(1, days);
+      } else {
+        bookingDataWithDays.days = 1; // Default to 1 day if dates not set
+      }
+    }
+    pricing = calculatePrice(car, bookingDataWithDays);
   } catch (error) {
     pricing = { basePrice: 0, insurancePrice: 0, servicesPrice: 0, locationPrice: 0, total: 0 };
     console.warn('Pricing calculation error:', error.message);
