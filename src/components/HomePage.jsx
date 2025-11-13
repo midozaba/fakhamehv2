@@ -21,6 +21,7 @@ const HomePage = () => {
   const [visibleSections, setVisibleSections] = useState(new Set());
   const sectionRefs = useRef([]);
   const [featuredCars, setFeaturedCars] = useState([]);
+  const [totalCars, setTotalCars] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -52,6 +53,7 @@ const HomePage = () => {
       const carsArray = Array.isArray(carsData) ? carsData : [];
       const shuffled = [...carsArray].sort(() => 0.5 - Math.random());
       setFeaturedCars(shuffled.slice(0, 6));
+      setTotalCars(carsArray);
 
       // Fetch reviews (if endpoint exists)
       try {
@@ -310,9 +312,7 @@ const HomePage = () => {
                     <p className="text-gray-500 text-sm mb-2 italic">{t('orSimilar')}</p>
                     <p className="text-gray-600 mb-4">{t('model')}: {car.car_model} • {t('color')}: {car.car_color || 'N/A'}</p>
                     <div className="flex justify-between items-center mb-4">
-                      <div className="text-2xl font-bold text-blue-900">
-                        {currencySymbol} {convertPrice(car.price_per_day)} <span className="text-sm text-gray-500">{t('perDay')}</span>
-                      </div>
+
                       <span className={`px-3 py-1 rounded-full text-sm ${
                         car.status === 'available'
                           ? 'bg-green-100 text-green-800'
@@ -356,8 +356,8 @@ const HomePage = () => {
           <div className="grid md:grid-cols-4 gap-8 text-center">
             {[
               { value: '5000+', label: language === 'ar' ? 'عميل سعيد' : 'Happy Clients', side: 'left' },
-              { value: `${featuredCars.length * 2}+`, label: language === 'ar' ? 'سيارة متاحة' : 'Cars Available', side: 'left' },
-              { value: '15+', label: language === 'ar' ? 'سنة خبرة' : 'Years Experience', side: 'right' },
+              { value: `${totalCars.length - 1}+`, label: language === 'ar' ? 'سيارة متاحة' : 'Cars Available', side: 'left' },
+              { value: '30+', label: language === 'ar' ? 'سنة خبرة' : 'Years Experience', side: 'right' },
               { value: '24/7', label: language === 'ar' ? 'دعم العملاء' : 'Customer Support', side: 'right' }
             ].map((stat, idx) => (
               <div

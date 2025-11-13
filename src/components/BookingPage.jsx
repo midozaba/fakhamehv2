@@ -203,21 +203,13 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
                 </div>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                <h3 className="font-semibold mb-3">Pricing Options</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>{t('perDay')}:</span>
-                    <span className="font-bold">{currencySymbol} {convertPrice(car.price_per_day)}</span>
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl mb-6 border-2 border-blue-200 shadow-md">
+                <div className="text-center">
+                  <p className="text-sm font-medium text-gray-600 mb-2">{t('perDay')}</p>
+                  <div className="text-5xl font-bold bg-gradient-to-r from-blue-900 to-indigo-900 bg-clip-text text-transparent mb-1">
+                    {currencySymbol} {convertPrice(car.price_per_day)}
                   </div>
-                  <div className="flex justify-between">
-                    <span>{t('perWeek')}:</span>
-                    <span className="font-bold">{currencySymbol} {convertPrice(car.price_per_week)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t('perMonth')}:</span>
-                    <span className="font-bold">{currencySymbol} {convertPrice(car.price_per_month)}</span>
-                  </div>
+                  <p className="text-xs text-gray-500 italic">{language === 'ar' ? 'السعر اليومي' : 'Daily Rate'}</p>
                 </div>
               </div>
 
@@ -420,10 +412,12 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
                     type="date"
                     value={bookingData.pickupDate}
                     onChange={(e) => {
-                      setBookingData({ ...bookingData, pickupDate: e.target.value });
+                      const newPickupDate = e.target.value;
                       if (bookingData.returnDate) {
-                        const days = Math.ceil((new Date(bookingData.returnDate) - new Date(e.target.value)) / (1000 * 60 * 60 * 24));
-                        setBookingData(prev => ({ ...prev, days: Math.max(1, days) }));
+                        const days = Math.ceil((new Date(bookingData.returnDate) - new Date(newPickupDate)) / (1000 * 60 * 60 * 24));
+                        setBookingData({ ...bookingData, pickupDate: newPickupDate, days: Math.max(1, days) });
+                      } else {
+                        setBookingData({ ...bookingData, pickupDate: newPickupDate });
                       }
                     }}
                     className="w-full p-3 border rounded-lg"
@@ -436,10 +430,12 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
                     type="date"
                     value={bookingData.returnDate}
                     onChange={(e) => {
-                      setBookingData({ ...bookingData, returnDate: e.target.value });
+                      const newReturnDate = e.target.value;
                       if (bookingData.pickupDate) {
-                        const days = Math.ceil((new Date(e.target.value) - new Date(bookingData.pickupDate)) / (1000 * 60 * 60 * 24));
-                        setBookingData(prev => ({ ...prev, days: Math.max(1, days) }));
+                        const days = Math.ceil((new Date(newReturnDate) - new Date(bookingData.pickupDate)) / (1000 * 60 * 60 * 24));
+                        setBookingData({ ...bookingData, returnDate: newReturnDate, days: Math.max(1, days) });
+                      } else {
+                        setBookingData({ ...bookingData, returnDate: newReturnDate });
                       }
                     }}
                     className="w-full p-3 border rounded-lg"
@@ -503,9 +499,9 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
               <h3 className="text-xl font-bold mb-4">{t('insurance')}</h3>
               <div className="space-y-3">
                 {[
-                  { id: 'basic', name: t('basicInsurance'), priceJOD: 5, desc: 'Basic coverage for accidents' },
-                  { id: 'full', name: t('fullInsurance'), priceJOD: 10, desc: 'Comprehensive coverage' },
-                  { id: 'premium', name: t('premiumInsurance'), priceJOD: 15, desc: 'Premium coverage with 24/7 support' }
+                  { id: 'basic', name: 'Basic Insurance', priceJOD: 0, desc: '600 JOD deductible' },
+                  { id: 'cdw', name: 'CDW Insurance', priceJOD: 15, desc: '300 JOD deductible' },
+                  { id: 'full', name: 'Full Insurance', priceJOD: 35, desc: 'No Liability!' }
                 ].map(insurance => (
                   <label key={insurance.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                     <input
@@ -563,13 +559,13 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
               </h3>
               <p className="text-sm text-gray-600 mb-4">
                 {language === 'ar'
-                  ? 'يرجى تحميل صور واضحة لهويتك وجواز سفرك'
-                  : 'Please upload clear photos of your ID and passport'}
+                  ? 'يرجى تحميل صور واضحة لجواز السفر/الهوية الوطنية ورخصة القيادة'
+                  : 'Please upload clear photos of your Passport/National ID and Driver\'s License'}
               </p>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    {language === 'ar' ? 'صورة الهوية الوطنية / بطاقة الإقامة *' : 'National ID / Residence Card Photo *'}
+                    {language === 'ar' ? 'صورة جواز السفر / الهوية الوطنية *' : 'Passport / National ID Photo *'}
                   </label>
                   <input
                     type="file"
@@ -598,7 +594,7 @@ const BookingPage = ({ handleBookingSubmit = () => {} }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    {language === 'ar' ? 'صورة جواز السفر *' : 'Passport Photo *'}
+                    {language === 'ar' ? 'صورة رخصة القيادة *' : 'Driver\'s License Photo *'}
                   </label>
                   <input
                     type="file"

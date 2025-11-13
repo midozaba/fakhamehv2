@@ -103,9 +103,9 @@ export const calculatePrice = (selectedCar, bookingData) => {
   let servicesPrice = 0;
   let locationPrice = 0;
 
-  if (bookingData.insurance === 'basic') insurancePrice = 5 * bookingData.days;
-  else if (bookingData.insurance === 'full') insurancePrice = 10 * bookingData.days;
-  else if (bookingData.insurance === 'premium') insurancePrice = 15 * bookingData.days;
+  if (bookingData.insurance === 'basic') insurancePrice = 0 * bookingData.days;
+  else if (bookingData.insurance === 'cdw') insurancePrice = 15 * bookingData.days;
+  else if (bookingData.insurance === 'full') insurancePrice = 35 * bookingData.days;
 
   if (bookingData.additionalServices && Array.isArray(bookingData.additionalServices)) {
     bookingData.additionalServices.forEach(service => {

@@ -195,21 +195,16 @@ const CarsPage = () => {
 
                     {/* Hover Overlay with Information - Desktop Only */}
                     <div className="hidden md:flex absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex-col justify-end p-3 pointer-events-none">
-                      <h3 className="text-lg font-bold mb-1 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                      <h3 className="text-lg font-bold text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                         {car.car_barnd} {car.car_type}
                       </h3>
-                      <p className="text-gray-200 text-xs mb-2 italic transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                      <p className="text-gray-200 text-xs mb-3 italic transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
                         {t('orSimilar')}
                       </p>
-                      <div className="text-xs text-gray-200 mb-2 space-y-0.5 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-100">
+                      <div className="text-xs text-gray-200 mb-4 space-y-0.5 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-100">
                         <p>{t('model')}: {car.car_model}</p>
                         <p>{t('color')}: {t(car.car_color)}</p>
                         <p>Category: {car.car_category || t(categorizeCarType(car.car_type))}</p>
-                      </div>
-                      <div className="mb-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-150">
-                        <div className="text-xl font-bold text-white">
-                          {currencySymbol} {convertPrice(parseFloat(car.price_per_day))} <span className="text-sm text-gray-300">{t('perDay')}</span>
-                        </div>
                       </div>
                       <button
                         onClick={(e) => {
@@ -217,7 +212,7 @@ const CarsPage = () => {
                           setSelectedCar(car);
                           navigate('/booking');
                         }}
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-2 text-sm rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all font-semibold transform translate-y-4 group-hover:translate-y-0 duration-500 delay-200 shadow-lg pointer-events-auto"
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-2 text-sm rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all font-semibold transform translate-y-4 group-hover:translate-y-0 duration-500 delay-150 shadow-lg pointer-events-auto"
                       >
                         {t('bookNow')}
                       </button>
@@ -225,23 +220,15 @@ const CarsPage = () => {
 
                     {/* Mobile-Only Card Info - Always Visible */}
                     <div className="md:hidden p-4 bg-white">
-                      <h3 className="text-lg font-bold text-gray-800 mb-1">
+                      <h3 className="text-lg font-bold text-gray-800">
                         {car.car_barnd} {car.car_type}
                       </h3>
-                      <p className="text-gray-500 text-xs mb-2 italic">
+                      <p className="text-gray-500 text-xs mb-3 italic">
                         {t('orSimilar')}
                       </p>
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="text-sm text-gray-600">
-                          <p>{t('model')}: {car.car_model}</p>
-                          <p>{t('color')}: {t(car.car_color)}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xl font-bold text-blue-900">
-                            {currencySymbol} {convertPrice(parseFloat(car.price_per_day))}
-                          </div>
-                          <span className="text-xs text-gray-500">{t('perDay')}</span>
-                        </div>
+                      <div className="text-sm text-gray-600 mb-3">
+                        <p>{t('model')}: {car.car_model}</p>
+                        <p>{t('color')}: {t(car.car_color)}</p>
                       </div>
                       <button
                         onClick={(e) => {
